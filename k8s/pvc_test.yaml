@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: write-to-pvc-pod
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    args:
+      - >
+        echo "Hello from Kubernetes Storage!" > /mnt/data/hello.txt;
+        sleep 3600;
+    volumeMounts:
+    - name: pvc-volume
+      mountPath: /mnt/data
+  volumes:
+  - name: pvc-volume
+    persistentVolumeClaim:
+      claimName: pvc

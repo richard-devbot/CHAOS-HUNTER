@@ -1,0 +1,111 @@
+{
+    "time_schedule": {
+        "thought": "The Chaos Engineering experiment is designed to test the system's resilience under simulated fault conditions, specifically during a high-demand event like a Black Friday sale. The experiment must be completed within 1 minute, so careful time allocation is crucial. The experiment is divided into three phases: pre-validation, fault-injection, and post-validation. \n\n1. **Pre-validation Phase (20 seconds):** This phase ensures that the system is in a steady state before any faults are injected. We will verify that the 'carts-db' replicas are running and ready for at least 90% of the time, and the 'front-end' replica is running and ready for at least 95% of the time. Given the short duration of the experiment, a 20-second pre-validation period is sufficient to confirm the system's initial stability.\n\n2. **Fault Injection Phase (20 seconds):** During this phase, we will inject the specified faults using Chaos Mesh. The 'carts-db' will undergo a StressChaos fault to simulate high CPU and memory usage, while the 'front-end' will experience a PodChaos fault to simulate a pod failure. The 20-second duration allows us to observe the system's behavior under stress and its ability to maintain steady states.\n\n3. **Post-validation Phase (20 seconds):** After fault injection, we need to ensure that the system returns to its steady states. This phase will verify that the 'carts-db' replicas and the 'front-end' replica meet their respective thresholds for readiness and availability. A 20-second post-validation period is adequate to confirm recovery and stability.\n\nThe total time for the experiment is 60 seconds, with each phase allocated 20 seconds to balance validation and fault observation effectively.",
+        "total_time": "60s",
+        "pre_validation_time": "20s",
+        "fault_injection_time": "20s",
+        "post_validation_time": "20s"
+    },
+    "pre_validation": {
+        "thought": "In the pre-validation phase, we need to ensure that the system is in its expected steady state before we proceed with fault injection. This involves verifying that the critical components, 'carts-db' and 'front-end', are operating as expected. Given the constraints of a 20-second total time for this phase, we will execute the unit tests for both steady states simultaneously to maximize efficiency. The 'carts-db-replicas-running' test will check that the 'carts-db' replicas are running and ready for at least 90% of the time during a 10-second monitoring period. Similarly, the 'front-end-replica-running' test will verify that the 'front-end' pod is running and ready for at least 95% of the time during the same 10-second period. By running these tests concurrently, we ensure that both components are in their expected steady states within the limited time frame, allowing us to proceed confidently to the fault injection phase.",
+        "unit_tests": [
+            {
+                "name": "carts-db-replicas-running",
+                "grace_period": "0s",
+                "duration": "10s",
+                "workflow_name": "pre-unittest-carts-db-replicas-running",
+                "deadline": "5m10s",
+                "file_path": "sandbox/cycle_20241127_035323/hypothesis/unittest_carts-db-replicas-running_mod0.py"
+            },
+            {
+                "name": "front-end-replica-running",
+                "grace_period": "0s",
+                "duration": "10s",
+                "workflow_name": "pre-unittest-front-end-replica-running",
+                "deadline": "5m10s",
+                "file_path": "sandbox/cycle_20241127_035323/hypothesis/unittest_front-end-replica-running_mod0.py"
+            }
+        ]
+    },
+    "fault_injection": {
+        "thought": "In this fault-injection phase, we aim to simulate a Black Friday sale scenario by injecting two types of faults: StressChaos on the 'carts-db' pods and PodChaos on the 'front-end' pod. The total duration for this phase is 20 seconds, so we need to carefully time the injections to observe their effects on the system's steady states. \n\nFirst, we will inject the StressChaos fault on the 'carts-db' pods. This fault will increase CPU and memory usage, testing the pods' ability to handle high load without resource requests. We will start this fault at the beginning of the phase (grace period of 0s) and let it run for 10 seconds. This duration is chosen to allow enough time for the stress to impact the system while leaving time for the next fault.\n\nNext, we will inject the PodChaos fault on the 'front-end' pod. This fault will kill the pod, testing the system's ability to recover and maintain availability with a single replica. We will start this fault 10 seconds into the phase (grace period of 10s) and let it run for the remaining 10 seconds. This staggered approach allows us to observe the effects of each fault separately and ensures that the system is under stress for the entire duration of the phase.\n\nBy staggering the faults, we can better understand how each component reacts to stress and failure, providing insights into potential weaknesses in resource allocation and redundancy.",
+        "fault_injection": [
+            {
+                "name": "StressChaos",
+                "name_id": 0,
+                "grace_period": "0s",
+                "duration": "10s",
+                "workflow_name": "fault-stresschaos",
+                "deadline": "10s",
+                "params": {
+                    "mode": "all",
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "carts-db"
+                        }
+                    },
+                    "stressors": {
+                        "cpu": {
+                            "workers": 2,
+                            "load": 80
+                        },
+                        "memory": {
+                            "workers": 2,
+                            "size": "256MB"
+                        }
+                    },
+                    "containerNames": [
+                        "carts-db"
+                    ]
+                }
+            },
+            {
+                "name": "PodChaos",
+                "name_id": 0,
+                "grace_period": "10s",
+                "duration": "10s",
+                "workflow_name": "fault-podchaos",
+                "deadline": "10s",
+                "params": {
+                    "action": "pod-kill",
+                    "mode": "one",
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "front-end"
+                        }
+                    },
+                    "value": "1"
+                }
+            }
+        ],
+        "unit_tests": []
+    },
+    "post_validation": {
+        "thought": "In the post-validation phase, we need to ensure that the system has returned to its steady states after the fault injection. Given the faults injected during the Black Friday Sale simulation, we will focus on verifying the steady states of the 'carts-db' and 'front-end' components. The post-validation phase is 20 seconds long, so we need to efficiently schedule the unit tests to verify the steady states within this time frame. \n\nThe approach is to run the unit tests for both steady states simultaneously, as they are independent checks and can be executed in parallel. This allows us to maximize the use of the available time and ensure both components are back to their expected states. The 'carts-db-replicas-running' test will check if the 'carts-db' replicas are running and ready for at least 90% of the time during the 20-second period, while the 'front-end-replica-running' test will verify that the 'front-end' pod is running and ready for at least 95% of the time. \n\nBy running these tests concurrently, we can quickly determine if the system has recovered from the faults and returned to its steady states, ensuring that the system is resilient and can handle similar scenarios in the future.",
+        "unit_tests": [
+            {
+                "name": "carts-db-replicas-running",
+                "grace_period": "0s",
+                "duration": "20s",
+                "workflow_name": "post-unittest-carts-db-replicas-running",
+                "deadline": "5m20s",
+                "file_path": "sandbox/cycle_20241127_035323/hypothesis/unittest_carts-db-replicas-running_mod0.py"
+            },
+            {
+                "name": "front-end-replica-running",
+                "grace_period": "0s",
+                "duration": "20s",
+                "workflow_name": "post-unittest-front-end-replica-running",
+                "deadline": "5m20s",
+                "file_path": "sandbox/cycle_20241127_035323/hypothesis/unittest_front-end-replica-running_mod0.py"
+            }
+        ]
+    },
+    "summary": "The Chaos Engineering experiment is structured into three phases, each lasting 20 seconds, to test the system's resilience during a simulated high-demand event. In the pre-validation phase, which lasts for 20 seconds, two unit tests are executed simultaneously to ensure the system is in a steady state before fault injection. The 'carts-db-replicas-running' test, with a workflow name of 'pre-unittest-carts-db-replicas-running', and the 'front-end-replica-running' test, with a workflow name of 'pre-unittest-front-end-replica-running', both start immediately at the beginning of the phase and run for 10 seconds. This concurrent execution confirms the readiness of the 'carts-db' replicas and the 'front-end' pod. In the fault-injection phase, also 20 seconds long, two faults are injected in a staggered manner. The 'StressChaos' fault, with a workflow name of 'fault-stresschaos', is injected at the start of the phase and runs for 10 seconds, simulating high CPU and memory usage on the 'carts-db' pods. Following this, the 'PodChaos' fault, with a workflow name of 'fault-podchaos', is injected 10 seconds into the phase and runs for the remaining 10 seconds, simulating a pod failure on the 'front-end'. This staggered approach allows for separate observation of each fault's impact. Finally, in the post-validation phase, which is again 20 seconds long, the system's recovery is verified by running two unit tests concurrently. The 'carts-db-replicas-running' test, with a workflow name of 'post-unittest-carts-db-replicas-running', and the 'front-end-replica-running' test, with a workflow name of 'post-unittest-front-end-replica-running', both start immediately and run for the full 20 seconds. This ensures that both the 'carts-db' replicas and the 'front-end' pod have returned to their expected steady states, confirming the system's resilience and recovery capabilities."
+}

@@ -1,0 +1,5 @@
+- name: {{ name }}
+  templateType: {{ FaultName }}
+  deadline: {{ deadline }}
+  {{ faultName }}:
+    {% macro someop() %}{{ specs }}{% endmacro %}{{ someop()|indent}}

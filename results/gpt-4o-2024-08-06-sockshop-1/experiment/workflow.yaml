@@ -1,0 +1,253 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: chaos-experiment-20241127-030328
+spec:
+  entry: the-entry
+  templates:
+    #-------------------------------
+    # entry point of whole workflow
+    #-------------------------------
+    - name: the-entry
+      templateType: Serial
+      deadline: 31m
+      children:
+        - pre-validation-phase
+        - fault-injection-phase
+        - post-validation-phase
+
+    #-------------------------------------
+    # Entry point of pre-validation-phase
+    #-------------------------------------
+    - name: pre-validation-phase
+      templateType: Serial
+      deadline: 10m15s
+      children:
+        - pre-validation-overlapped-workflows
+    
+    - name: pre-validation-suspend-workflow
+      templateType: Serial
+      deadline: 5m15s
+      children:
+        - pre-validation-suspend
+        - pre-unittest-front-end-replicas
+
+    - name: pre-validation-suspend
+      templateType: Suspend
+      deadline: 7s
+
+    - name: pre-validation-overlapped-workflows
+      templateType: Parallel
+      deadline: 5m15s
+      children:
+        - pre-unittest-carts-db-replicas
+        - pre-validation-suspend-workflow
+
+    # Definitions of children of pre-validation-phase
+    - name: pre-unittest-carts-db-replicas
+      templateType: Task
+      deadline: 5m7s
+      task:
+        container:
+          name: pre-unittest-carts-db-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_carts-db-replicas_mod0.py --duration 7"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    - name: pre-unittest-front-end-replicas
+      templateType: Task
+      deadline: 5m8s
+      task:
+        container:
+          name: pre-unittest-front-end-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_front-end-replicas_mod0.py --duration 8"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+    
+    #--------------------------------------
+    # Entry point of fault-injection-phase
+    #--------------------------------------
+    - name: fault-injection-phase
+      templateType: Serial
+      deadline: 10m30s
+      children:
+        - fault-injection-overlapped-workflows
+
+    - name: fault-injection-parallel-workflow
+      templateType: Parallel
+      deadline: 5m30s
+      children:
+        - fault-unittest-carts-db-replicas
+        - fault-unittest-front-end-replicas
+        - fault-stresschaos
+
+    - name: fault-injection-suspend-workflow
+      templateType: Serial
+      deadline: 30s
+      children:
+        - fault-injection-suspend
+        - fault-podchaos
+
+    - name: fault-injection-suspend
+      templateType: Suspend
+      deadline: 15s
+
+    - name: fault-injection-overlapped-workflows
+      templateType: Parallel
+      deadline: 5m30s
+      children:
+        - fault-injection-parallel-workflow
+        - fault-injection-suspend-workflow
+
+    # Definitions of children of pre-validation-phase
+    # unit tests
+    - name: fault-unittest-carts-db-replicas
+      templateType: Task
+      deadline: 5m30s
+      task:
+        container:
+          name: fault-unittest-carts-db-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_carts-db-replicas_mod0.py --duration 30"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    - name: fault-unittest-front-end-replicas
+      templateType: Task
+      deadline: 5m30s
+      task:
+        container:
+          name: fault-unittest-front-end-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_front-end-replicas_mod0.py --duration 30"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    # fault_injections
+    - name: fault-stresschaos
+      templateType: StressChaos
+      deadline: 15s
+      stressChaos:
+        containerNames:
+          - carts-db
+        mode: all
+        selector:
+          labelSelectors:
+            name: carts-db
+          namespaces:
+            - sock-shop
+        stressors:
+          cpu:
+            load: 100
+            workers: 2
+          memory:
+            size: 256MB
+            workers: 2
+
+
+    - name: fault-podchaos
+      templateType: PodChaos
+      deadline: 15s
+      podChaos:
+        action: pod-kill
+        mode: one
+        selector:
+          labelSelectors:
+            name: front-end
+          namespaces:
+            - sock-shop
+
+    
+    #--------------------------------------
+    # Entry point of post-validation phase
+    #--------------------------------------
+    - name: post-validation-phase
+      templateType: Serial
+      deadline: 10m15s
+      children:
+        - post-validation-overlapped-workflows
+
+    - name: post-validation-suspend-workflow
+      templateType: Serial
+      deadline: 5m15s
+      children:
+        - post-validation-suspend
+        - post-unittest-front-end-replicas
+
+    - name: post-validation-suspend
+      templateType: Suspend
+      deadline: 7s
+
+    - name: post-validation-overlapped-workflows
+      templateType: Parallel
+      deadline: 5m15s
+      children:
+        - post-unittest-carts-db-replicas
+        - post-validation-suspend-workflow
+
+    # Definitions of children of pre-validation-phase
+    - name: post-unittest-carts-db-replicas
+      templateType: Task
+      deadline: 5m7s
+      task:
+        container:
+          name: post-unittest-carts-db-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_carts-db-replicas_mod0.py --duration 7"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    - name: post-unittest-front-end-replicas
+      templateType: Task
+      deadline: 5m8s
+      task:
+        container:
+          name: post-unittest-front-end-replicas-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_024431/unittest_front-end-replicas_mod0.py --duration 8"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc

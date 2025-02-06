@@ -1,0 +1,101 @@
+{
+    "event": "Black Friday Sale",
+    "faults": [
+        [
+            {
+                "name": "StressChaos",
+                "name_id": 0,
+                "params": {
+                    "mode": "all",
+                    "value": "2",
+                    "stressors": {
+                        "cpu": {
+                            "workers": 2,
+                            "load": 100
+                        }
+                    },
+                    "containerNames": [
+                        "carts"
+                    ],
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "carts"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "StressChaos",
+                "name_id": 1,
+                "params": {
+                    "mode": "all",
+                    "stressors": {
+                        "cpu": {
+                            "workers": 2,
+                            "load": 80
+                        }
+                    },
+                    "containerNames": [
+                        "front-end"
+                    ],
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "front-end"
+                        }
+                    }
+                }
+            }
+        ],
+        [
+            {
+                "name": "NetworkChaos",
+                "name_id": 0,
+                "params": {
+                    "action": "delay",
+                    "mode": "all",
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "front-end"
+                        }
+                    },
+                    "direction": "to",
+                    "device": "eth0",
+                    "delay": {
+                        "latency": "100ms",
+                        "jitter": "10ms",
+                        "correlation": "50"
+                    }
+                }
+            }
+        ],
+        [
+            {
+                "name": "PodChaos",
+                "name_id": 0,
+                "params": {
+                    "action": "pod-kill",
+                    "mode": "one",
+                    "selector": {
+                        "namespaces": [
+                            "sock-shop"
+                        ],
+                        "labelSelectors": {
+                            "name": "front-end"
+                        }
+                    },
+                    "value": "1"
+                }
+            }
+        ]
+    ],
+    "description": "During a Black Friday sale, the system is expected to handle a significant increase in traffic and load. This event will test the system's ability to maintain steady states under high demand. The 'CartsServiceEndpointsAvailable' steady state is crucial as it ensures the availability of the carts service, which is essential for users to add items to their cart. The 'FrontEndLivenessProbeSuccess' steady state is also critical as it ensures the front-end is responsive, allowing users to browse and make purchases. The system's weaknesses include missing port configurations, a single replica deployment for the front-end, and high initial delays for probes. To simulate the Black Friday event, we will first inject a 'StressChaos' fault to simulate high CPU usage on the 'carts' and 'front-end' pods, testing their ability to handle increased load. Next, we will inject a 'NetworkChaos' fault to simulate network latency, testing the system's resilience to network issues during high traffic. Finally, we will inject a 'PodChaos' fault to kill the single replica of the 'front-end' pod, testing the system's ability to recover from pod failures without redundancy."
+}

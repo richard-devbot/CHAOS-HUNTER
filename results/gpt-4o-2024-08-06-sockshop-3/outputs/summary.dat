@@ -1,0 +1,39 @@
+The Chaos Engineering cycle for the 'sock-shop' system involved a detailed analysis and testing of the system's resilience under simulated high-demand conditions, such as a Black Friday sale. The system is composed of various Kubernetes manifests that define deployments and services for different components of the Sock Shop application, a microservices-based e-commerce platform.
+
+### Step 0: User-input Understanding
+The system's architecture was analyzed through its Kubernetes manifests, which include definitions for namespaces, deployments, and services. Key components such as 'carts', 'catalogue', 'orders', 'payment', 'shipping', 'user', and their respective databases were identified. Each component's configuration, including replicas, resource limits, security contexts, and service ports, was reviewed to understand the system's current state and potential weaknesses.
+
+### Identified Resiliency Issues
+Several resiliency issues were identified:
+1. **Missing Resource Requests**: Some deployments, like 'carts-db', lacked resource requests, risking scheduling issues under resource constraints.
+2. **Single Replica Deployment**: The 'front-end' deployment had only one replica, making it vulnerable to downtime if the pod failed.
+3. **Missing Liveness and Readiness Probes**: Many deployments lacked these probes, which are crucial for Kubernetes to manage pod health.
+4. **Hardcoded Environment Variables**: Security vulnerabilities were noted due to hardcoded passwords in environment variables.
+5. **Missing Service Port Configuration**: Some services had commented-out port configurations, leading to potential connectivity issues.
+
+### Step 1: Hypothesis Definition
+The hypothesis was that the system would maintain its steady states even when faults were injected. Two steady states were defined:
+- **Carts-db Replicas Running**: Ensuring 'carts-db' replicas are ready 90% of the time during a 1-minute period.
+- **Front-end Replica Running**: Ensuring the 'front-end' pod is ready 95% of the time during a 1-minute period.
+
+### Step 2.1: Chaos-Engineering Experiment
+The experiment was structured into three phases, each lasting 20 seconds:
+1. **Pre-validation Phase**: Verified the system's initial steady state.
+2. **Fault Injection Phase**: Simulated high load and pod failure using Chaos Mesh, injecting StressChaos on 'carts-db' and PodChaos on 'front-end'.
+3. **Post-validation Phase**: Checked if the system returned to its steady states.
+
+### Step 2.2, 3, 4: Experiment Execution, Analysis, and Improvement
+**1st Try Results**:
+- The 'carts-db' component maintained its steady state, but the 'front-end' component failed post-validation due to its single replica configuration.
+
+**Analysis**:
+- The single replica of 'front-end' led to downtime when the pod was killed, highlighting the need for redundancy.
+
+**Improvements**:
+- Increased 'front-end' replicas from 1 to 2.
+- Added resource requests to 'carts-db' to ensure scheduling under constraints.
+
+**2nd Try Results**:
+- All unit tests passed, confirming the system's resilience and recovery capabilities after improvements.
+
+The experiment successfully identified and addressed critical resilience issues, enhancing the system's fault tolerance and availability.

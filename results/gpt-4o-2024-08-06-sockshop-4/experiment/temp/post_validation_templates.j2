@@ -1,0 +1,35 @@
+- name: post-unittest-carts-db-pod-count
+  templateType: Task
+  deadline: 5m6s
+  task:
+    container:
+      name: post-unittest-carts-db-pod-count-container
+      image: chaos-eater/k8sapi:1.0
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-c"]
+      args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py --duration 6"]
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc
+
+- name: post-unittest-front-end-pod-count
+  templateType: Task
+  deadline: 5m6s
+  task:
+    container:
+      name: post-unittest-front-end-pod-count-container
+      image: chaos-eater/k8sapi:1.0
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-c"]
+      args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py --duration 6"]
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc

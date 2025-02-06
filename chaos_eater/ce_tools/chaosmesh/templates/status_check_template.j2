@@ -1,0 +1,13 @@
+- name: {{ task_name }}
+  templateType: StatusCheck
+  deadline: {{ deadline }}
+  statusCheck:
+    mode: Continuous
+    type: HTTP
+    intervalSeconds: {{ interval_sec }}
+    timeoutSeconds: {{ timeout_sec }}
+    http:
+      url: {{ url }}
+      method: {{ method }} # GET or POST
+      criteria:
+        statusCode: {{ status_code }}

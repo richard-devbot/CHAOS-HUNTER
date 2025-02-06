@@ -1,0 +1,13 @@
+{
+    "mod_k8s_yamls": {
+        "thought": "To improve the resiliency of the system, I will replace the Pod manifest with a Deployment manifest. This will allow for multiple replicas of the Pod, providing redundancy and automatic recovery in case of failures. Additionally, I will set the restart policy to 'Always' to ensure that Pods are automatically restarted if they fail.",
+        "modified_k8s_yamls": [
+            {
+                "mod_type": "replace",
+                "fname": "nginx/pod.yaml",
+                "explanation": "Replace the Pod manifest with a Deployment manifest to provide redundancy and automatic recovery. The Deployment will manage multiple replicas of the Pod, ensuring that the application remains available even if one Pod fails. The restart policy is set to 'Always' to ensure Pods are restarted automatically if they fail.",
+                "code": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: example-deployment\n  labels:\n    app: example\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: example\n  template:\n    metadata:\n      labels:\n        app: example\n    spec:\n      containers:\n      - name: example-container\n        image: nginx:1.17.1\n        ports:\n        - containerPort: 80\n      restartPolicy: Always"
+            }
+        ]
+    }
+}

@@ -1,0 +1,8 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: mod-1
+manifests:
+  rawYaml:
+    - pod.yaml
+    - service.yaml

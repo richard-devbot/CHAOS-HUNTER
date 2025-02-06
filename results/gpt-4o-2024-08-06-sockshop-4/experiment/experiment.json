@@ -1,0 +1,146 @@
+{
+    "plan": {
+        "time_schedule": {
+            "thought": "To design a Chaos Engineering experiment that fits within the 1-minute constraint, we need to allocate time efficiently across the three phases: pre-validation, fault injection, and post-validation. Given the steady states and the fault scenario, we should ensure that each phase is long enough to gather meaningful data while staying within the total time limit. \n\n1. **Pre-validation Phase**: This phase is crucial to ensure that the system is in a steady state before we introduce any faults. We need to verify that the 'carts-db' and 'front-end' pods are running as expected. Given the 1-minute total time constraint, we can allocate 15 seconds for this phase. This should be sufficient to run the steady state checks for both 'carts-db' and 'front-end' pods, as the checks are designed to run quickly.\n\n2. **Fault Injection Phase**: This is the core of the experiment where we introduce the faults. We have three faults to inject: StressChaos on 'carts-db', PodChaos on 'front-end', and NetworkChaos on 'front-end'. We need to observe the system's behavior under these conditions. Allocating 30 seconds for this phase allows us to introduce each fault and observe the immediate impact on the system. This duration is a compromise between observing the effects and staying within the time limit.\n\n3. **Post-validation Phase**: After the faults are removed, we need to ensure that the system returns to its steady state. This phase should verify that the 'carts-db' and 'front-end' pods are back to their expected counts. Allocating 15 seconds for this phase allows us to run the steady state checks again to confirm recovery.\n\nIn summary, the time allocation is 15 seconds for pre-validation, 30 seconds for fault injection, and 15 seconds for post-validation, totaling 60 seconds.",
+            "total_time": "60s",
+            "pre_validation_time": "15s",
+            "fault_injection_time": "30s",
+            "post_validation_time": "15s"
+        },
+        "pre_validation": {
+            "thought": "In the pre-validation phase, we need to ensure that the system is in a steady state before we proceed with fault injection. This involves verifying that the key components of the system are operating as expected. Given the constraints of a 15-second total time for this phase, we need to efficiently schedule the unit tests to verify the steady states. \n\nThe two steady states we need to verify are:\n1. `carts-db-pod-count`: Ensure that at least 2 'carts-db' pods are running 95% of the time within a 1-minute monitoring period.\n2. `front-end-pod-count`: Ensure that at least 1 'front-end' pod is running 95% of the time during a 1-minute monitoring period.\n\nSince we only have 15 seconds for the pre-validation phase, we will perform a quick check to ensure that the current pod counts meet the expected values. This will not be a full 1-minute check but a snapshot to ensure that the system is in a steady state at the start of the experiment.\n\nThe approach is to run both unit tests simultaneously to maximize the use of the limited time. Each test will have a grace period of 0 seconds and a duration of 15 seconds, allowing us to quickly verify the current state of the system. This approach ensures that we can confirm the system's readiness for the chaos experiment within the given time constraint.",
+            "unit_tests": [
+                {
+                    "name": "carts-db-pod-count",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "pre-unittest-carts-db-pod-count",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py"
+                },
+                {
+                    "name": "front-end-pod-count",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "pre-unittest-front-end-pod-count",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py"
+                }
+            ]
+        },
+        "fault_injection": {
+            "thought": "In this fault-injection phase, we aim to simulate a Black Friday sale scenario by introducing stress and disruptions to the system. The phase is designed to last 30 seconds, and we will inject three types of faults sequentially to observe the system's behavior under stress. The sequence and timing of the fault injections are crucial to effectively simulate the scenario and observe the system's resilience.\n\n1. **StressChaos on 'carts-db' Pods**: We will start by injecting a StressChaos fault targeting the 'carts-db' pods. This fault will simulate high CPU and memory usage, which is typical during a high-traffic event like Black Friday. The stress will be applied for 10 seconds, starting immediately at the beginning of the phase (grace period of 0s). This will help us observe if the 'carts-db' pods can maintain the required pod count despite the missing resource requests.\n\n2. **PodChaos on 'front-end' Pod**: After the StressChaos, we will introduce a PodChaos fault to kill the single replica 'front-end' pod. This fault will be injected at the 10-second mark (grace period of 10s) and will last for 10 seconds. This will test the system's ability to recover from a pod failure, especially since the 'front-end' deployment has only one replica.\n\n3. **NetworkChaos on 'front-end' Service**: Finally, we will inject a NetworkChaos fault to introduce network latency on the 'front-end' service. This fault will be injected at the 20-second mark (grace period of 20s) and will last for 10 seconds. This simulates network issues that might occur during high traffic, testing the system's ability to handle such disruptions.\n\nThe faults are injected sequentially to ensure that each fault's impact can be observed independently, while also simulating a realistic scenario where multiple issues might occur in quick succession during a high-demand event. The timing is staggered to allow for clear observation of each fault's effects and the system's response.",
+            "fault_injection": [
+                {
+                    "name": "StressChaos",
+                    "name_id": 0,
+                    "grace_period": "0s",
+                    "duration": "10s",
+                    "workflow_name": "fault-stresschaos",
+                    "deadline": "10s",
+                    "params": {
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "carts-db"
+                            }
+                        },
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 100
+                            },
+                            "memory": {
+                                "workers": 2,
+                                "size": "256MB"
+                            }
+                        },
+                        "containerNames": [
+                            "carts-db"
+                        ]
+                    }
+                },
+                {
+                    "name": "PodChaos",
+                    "name_id": 1,
+                    "grace_period": "10s",
+                    "duration": "10s",
+                    "workflow_name": "fault-podchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "NetworkChaos",
+                    "name_id": 2,
+                    "grace_period": "20s",
+                    "duration": "10s",
+                    "workflow_name": "fault-networkchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "delay",
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "direction": "to",
+                        "device": "eth0",
+                        "delay": {
+                            "latency": "100ms",
+                            "jitter": "10ms",
+                            "correlation": "50"
+                        }
+                    }
+                }
+            ],
+            "unit_tests": []
+        },
+        "post_validation": {
+            "thought": "In the post-validation phase, we need to ensure that the system has returned to its steady states after the fault injection. Given the constraints of a 15-second total time for this phase, we will focus on quickly verifying the two defined steady states: 'carts-db-pod-count' and 'front-end-pod-count'. The approach is to execute these unit tests simultaneously to maximize the use of the limited time available. Each unit test will have a short grace period to allow the system to stabilize after the fault injection, followed by a brief duration to verify the steady state. The thought process is to ensure that both critical components, 'carts-db' and 'front-end', are functioning as expected, which will indicate that the system has recovered from the injected faults.",
+            "unit_tests": [
+                {
+                    "name": "carts-db-pod-count",
+                    "grace_period": "2s",
+                    "duration": "6s",
+                    "workflow_name": "post-unittest-carts-db-pod-count",
+                    "deadline": "5m6s",
+                    "file_path": "sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py"
+                },
+                {
+                    "name": "front-end-pod-count",
+                    "grace_period": "2s",
+                    "duration": "6s",
+                    "workflow_name": "post-unittest-front-end-pod-count",
+                    "deadline": "5m6s",
+                    "file_path": "sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py"
+                }
+            ]
+        },
+        "summary": "The Chaos Engineering experiment is structured into three phases: pre-validation, fault injection, and post-validation, all within a total duration of 60 seconds. \n\nIn the pre-validation phase, which lasts for 15 seconds, the system's steady state is verified by checking the 'carts-db' and 'front-end' pods. Both unit tests, 'carts-db-pod-count' and 'front-end-pod-count', are executed simultaneously with no delay at the start of this phase. Each test runs for the entire 15 seconds to ensure the system is ready for the chaos experiment.\n\nThe fault injection phase spans 30 seconds and involves three sequential fault injections. First, a StressChaos fault is applied to the 'carts-db' pods immediately at the start of the phase, lasting for 10 seconds. Next, a PodChaos fault is introduced to the 'front-end' pod at the 10-second mark, also lasting for 10 seconds. Finally, a NetworkChaos fault is injected on the 'front-end' service at the 20-second mark, continuing for 10 seconds. This staggered approach allows for independent observation of each fault's impact.\n\nIn the post-validation phase, which also lasts 15 seconds, the system's recovery is verified. The unit tests 'carts-db-pod-count' and 'front-end-pod-count' are executed simultaneously, each starting after a 2-second delay to allow for stabilization. Both tests run for 6 seconds to confirm that the system has returned to its steady state after the faults are removed."
+    },
+    "workflow_name": "chaos-experiment-20241127-042755",
+    "workflow": {
+        "path": "sandbox/cycle_20241127_041819/experiment/workflow.yaml",
+        "content": "apiVersion: chaos-mesh.org/v1alpha1\nkind: Workflow\nmetadata:\n  name: chaos-experiment-20241127-042755\nspec:\n  entry: the-entry\n  templates:\n    #-------------------------------\n    # entry point of whole workflow\n    #-------------------------------\n    - name: the-entry\n      templateType: Serial\n      deadline: 25m21s\n      children:\n        - pre-validation-phase\n        - fault-injection-phase\n        - post-validation-phase\n\n    #-------------------------------------\n    # Entry point of pre-validation-phase\n    #-------------------------------------\n    - name: pre-validation-phase\n      templateType: Serial\n      deadline: 10m15s\n      children:\n        - pre-validation-parallel-workflows\n    \n    - name: pre-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m15s\n      children:\n        - pre-unittest-carts-db-pod-count\n        - pre-unittest-front-end-pod-count\n\n    # Definitions of children of pre-validation-phase\n    - name: pre-unittest-carts-db-pod-count\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: pre-unittest-carts-db-pod-count-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: pre-unittest-front-end-pod-count\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: pre-unittest-front-end-pod-count-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n    \n    #--------------------------------------\n    # Entry point of fault-injection-phase\n    #--------------------------------------\n    - name: fault-injection-phase\n      templateType: Serial\n      deadline: 5m\n      children:\n        - fault-stresschaos\n        - fault-podchaos\n        - fault-networkchaos\n\n    \n\n    # Definitions of children of pre-validation-phase\n    # unit tests\n\n\n    # fault_injections\n    - name: fault-stresschaos\n      templateType: StressChaos\n      deadline: 10s\n      stressChaos:\n        containerNames:\n          - carts-db\n        mode: all\n        selector:\n          labelSelectors:\n            name: carts-db\n          namespaces:\n            - sock-shop\n        stressors:\n          cpu:\n            load: 100\n            workers: 2\n          memory:\n            size: 256MB\n            workers: 2\n\n\n    - name: fault-podchaos\n      templateType: PodChaos\n      deadline: 10s\n      podChaos:\n        action: pod-kill\n        mode: one\n        selector:\n          labelSelectors:\n            name: front-end\n          namespaces:\n            - sock-shop\n\n\n    - name: fault-networkchaos\n      templateType: NetworkChaos\n      deadline: 10s\n      networkChaos:\n        action: delay\n        delay:\n          correlation: '50'\n          jitter: 10ms\n          latency: 100ms\n        device: eth0\n        direction: to\n        mode: all\n        selector:\n          labelSelectors:\n            name: front-end\n          namespaces:\n            - sock-shop\n\n    \n    #--------------------------------------\n    # Entry point of post-validation phase\n    #--------------------------------------\n    - name: post-validation-phase\n      templateType: Serial\n      deadline: 10m6s\n      children:\n        - post-validation-parallel-workflows\n\n    - name: post-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m6s\n      children:\n        - post-unittest-carts-db-pod-count\n        - post-unittest-front-end-pod-count\n\n    # Definitions of children of pre-validation-phase\n    - name: post-unittest-carts-db-pod-count\n      templateType: Task\n      deadline: 5m6s\n      task:\n        container:\n          name: post-unittest-carts-db-pod-count-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py --duration 6\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: post-unittest-front-end-pod-count\n      templateType: Task\n      deadline: 5m6s\n      task:\n        container:\n          name: post-unittest-front-end-pod-count-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py --duration 6\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc",
+        "work_dir": "sandbox/cycle_20241127_041819/experiment",
+        "fname": "workflow.yaml"
+    }
+}

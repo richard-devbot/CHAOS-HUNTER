@@ -1,0 +1,5 @@
+- name: {{ name }}
+  templateType: {{ template_type }}
+  deadline: {{ deadline }}
+  children:
+    {% macro someop() %}{{ groundchildren }}{% endmacro %}{{ someop() | indent(4)}}

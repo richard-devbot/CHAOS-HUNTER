@@ -1,0 +1,7 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: sock-shop-app
+manifests:
+  rawYaml:
+    - complete-demo.yaml

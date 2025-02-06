@@ -1,0 +1,47 @@
+{
+    "event": "Cyber Attack Simulation",
+    "faults": [
+        [
+            {
+                "name": "NetworkChaos",
+                "name_id": 0,
+                "params": {
+                    "action": "delay",
+                    "direction": "to",
+                    "mode": "all",
+                    "selector": {
+                        "namespaces": [
+                            "default"
+                        ],
+                        "labelSelectors": {
+                            "app": "example"
+                        }
+                    },
+                    "delay": {
+                        "latency": "100ms",
+                        "jitter": "10ms"
+                    }
+                }
+            }
+        ],
+        [
+            {
+                "name": "PodChaos",
+                "name_id": 0,
+                "params": {
+                    "action": "pod-kill",
+                    "mode": "one",
+                    "selector": {
+                        "namespaces": [
+                            "default"
+                        ],
+                        "labelSelectors": {
+                            "app": "example"
+                        }
+                    }
+                }
+            }
+        ]
+    ],
+    "description": "Given the system's weaknesses, a cyber attack targeting the availability of the web server could be highly impactful. The Pod's restart policy set to 'Never' and the single Pod deployment create vulnerabilities that could lead to downtime if the Pod fails. To simulate a cyber attack, we can introduce network disruptions and resource exhaustion to test the system's resilience. First, we will simulate network latency to see if the Service can still route traffic effectively, which tests the 'ServiceRoutingState_nginx_service'. Then, we will introduce a Pod failure to test the 'PodRunningState_nginx_pod', checking if the system can recover from a Pod failure without automatic restarts. This sequence simulates a cyber attack by first degrading network performance and then causing a Pod failure, testing the system's ability to maintain its steady states under stress."
+}

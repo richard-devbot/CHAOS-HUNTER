@@ -1,0 +1,7 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: {{ name }}
+manifests:
+  rawYaml:
+    {% macro someop() %}{{ yaml_paths }}{% endmacro %}{{ someop() | indent(4)}}

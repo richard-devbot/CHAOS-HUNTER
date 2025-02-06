@@ -1,0 +1,15 @@
+- name: {{ task_name }}
+  templateType: Task
+  deadline: {{ deadline }}
+  task:
+    container:
+      name: {{ task_name }}-container
+      image: grafana/k6:latest
+      command: ["k6", "run", "--duration", "{{ duration }}", "--quiet", "/chaos-eater/{{ unittest_path }}"]    
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc

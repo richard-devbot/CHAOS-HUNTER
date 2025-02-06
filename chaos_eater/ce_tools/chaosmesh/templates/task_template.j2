@@ -1,0 +1,17 @@
+- name: {{ task_name }}
+  templateType: Task
+  deadline: {{ deadline }}
+  task:
+    container:
+      name: {{ task_name }}-container
+      image: chaos-eater/k8sapi:1.0
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-c"]
+      args: ["python /chaos-eater/{{ unittest_path }} --duration {{ duration }}"]
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc

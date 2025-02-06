@@ -1,0 +1,113 @@
+{
+    "steady_states": {
+        "elems": [
+            {
+                "id": 0,
+                "name": "carts-db-replicas-running",
+                "description": "The first issue to address is the 'Missing Resource Requests' in the 'carts-db' Deployment. This is a critical issue because without resource requests, the pods may not be scheduled if the cluster is under resource constraints, leading to potential downtime. The steady state for this manifest should ensure that the 'carts-db' pods are running and available, which can be measured by checking the number of replicas that are in the 'Running' state.",
+                "inspection": {
+                    "tool_type": "k8s",
+                    "duration": "5s",
+                    "script": {
+                        "path": "sandbox/cycle_20241127_035323/hypothesis/k8s_carts-db-replicas-running.py",
+                        "content": "import os\nimport time\nfrom kubernetes import client, config\n\n# Load Kubernetes configuration based on the environment\nif os.getenv('KUBERNETES_SERVICE_HOST'):\n    config.load_incluster_config()\nelse:\n    config.load_kube_config()\n\nv1 = client.AppsV1Api()\n\ndef check_carts_db_replicas(namespace='sock-shop', deployment_name='carts-db'):\n    try:\n        deployment = v1.read_namespaced_deployment(name=deployment_name, namespace=namespace)\n        replicas = deployment.status.replicas\n        ready_replicas = deployment.status.ready_replicas\n        print(f\"Total replicas: {replicas}, Ready replicas: {ready_replicas}\")\n        return ready_replicas == replicas\n    except client.exceptions.ApiException as e:\n        print(f\"Exception when calling AppsV1Api->read_namespaced_deployment: {e}\")\n        return False\n\ndef main(duration):\n    success_count = 0\n    for _ in range(duration):\n        if check_carts_db_replicas():\n            success_count += 1\n        time.sleep(1)\n    print(f\"Carts-db replicas running successfully for {success_count}/{duration} seconds.\")\n\nif __name__ == '__main__':\n    import argparse\n    parser = argparse.ArgumentParser(description='Check carts-db replicas running state.')\n    parser.add_argument('--duration', type=int, default=5, help='Duration to check the state in seconds')\n    args = parser.parse_args()\n    main(args.duration)\n",
+                        "work_dir": "sandbox/cycle_20241127_035323/hypothesis",
+                        "fname": "k8s_carts-db-replicas-running.py"
+                    },
+                    "result": "Total replicas: 2, Ready replicas: 2\nTotal replicas: 2, Ready replicas: 2\nTotal replicas: 2, Ready replicas: 2\nTotal replicas: 2, Ready replicas: 2\nTotal replicas: 2, Ready replicas: 2\nCarts-db replicas running successfully for 5/5 seconds.\n"
+                },
+                "threshold": {
+                    "threshold": "The 'carts-db' replicas must be ready for at least 90% of the time during a 1-minute monitoring period, which equates to at least 54 out of 60 seconds.",
+                    "reason": "The steady state we are considering is the number of 'carts-db' replicas that are running and ready. The current state shows that there are 2 replicas, and both are ready, which is the expected state. Given that the deployment specifies 2 replicas, the threshold should ensure that both replicas are running and ready. To account for some fluctuations and ensure the system remains stable, we can define a threshold that allows for a small percentage of time where not all replicas are ready, as long as the system recovers quickly. Since the experiment duration is 1 minute, we can set a threshold that requires the 'carts-db' replicas to be ready for at least 90% of the time during this period. This means that out of 60 seconds, the replicas should be ready for at least 54 seconds. This threshold provides a reasonable tolerance for transient issues while ensuring the system remains stable."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241127_035323/hypothesis/unittest_carts-db-replicas-running_mod0.py",
+                    "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\nfrom unittest_base import K8sAPIBase\n\nclass TestCartsDBReplicas(K8sAPIBase):\n    def __init__(self):\n        super().__init__()\n        self.v1_apps = client.AppsV1Api()\n\n    def check_carts_db_replicas(self, namespace='sock-shop', deployment_name='carts-db'):\n        try:\n            deployment = self.v1_apps.read_namespaced_deployment(name=deployment_name, namespace=namespace)\n            replicas = deployment.status.replicas\n            ready_replicas = deployment.status.ready_replicas\n            print(f\"Total replicas: {replicas}, Ready replicas: {ready_replicas}\")\n            return ready_replicas == replicas\n        except client.exceptions.ApiException as e:\n            print(f\"Exception when calling AppsV1Api->read_namespaced_deployment: {e}\")\n            return False\n\n    def test_replicas_ready_threshold(self, duration):\n        success_count = 0\n        for _ in range(duration):\n            if self.check_carts_db_replicas():\n                success_count += 1\n            time.sleep(1)\n        # Calculate the threshold as 90% of the duration\n        threshold = 0.9 * duration\n        print(f\"Carts-db replicas running successfully for {success_count}/{duration} seconds.\")\n        # Assert that the success count meets or exceeds the threshold\n        assert success_count >= threshold, f\"Replicas were not ready for at least 90% of the time. Success count: {success_count}, Required: {threshold}\"\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Test carts-db replicas readiness threshold.')\n    parser.add_argument('--duration', type=int, default=60, help='Duration to check the state in seconds')\n    args = parser.parse_args()\n\n    test = TestCartsDBReplicas()\n    test.test_replicas_ready_threshold(args.duration)\n\n\nif __name__ == '__main__':\n    main()\n",
+                    "work_dir": "sandbox/cycle_20241127_035323/hypothesis",
+                    "fname": "unittest_carts-db-replicas-running_mod0.py"
+                }
+            },
+            {
+                "id": 1,
+                "name": "front-end-replica-running",
+                "description": "The next issue to address is the 'Single Replica Deployment' in the 'front-end' Deployment. This is a critical issue because having only a single replica can lead to downtime if the pod fails. The steady state for this manifest should ensure that the 'front-end' pod is running and available, which can be measured by checking the number of replicas that are in the 'Running' state. Since there is only one replica, the steady state should ensure that this single replica is running and ready for the entire duration of the monitoring period.",
+                "inspection": {
+                    "tool_type": "k8s",
+                    "duration": "5s",
+                    "script": {
+                        "path": "sandbox/cycle_20241127_035323/hypothesis/k8s_front-end-replica-running.py",
+                        "content": "import os\nimport time\nfrom kubernetes import client, config\n\n# Load Kubernetes configuration based on the environment\nif os.getenv('KUBERNETES_SERVICE_HOST'):\n    config.load_incluster_config()\nelse:\n    config.load_kube_config()\n\nv1 = client.CoreV1Api()\n\nnamespace = 'sock-shop'\ndeployment_name = 'front-end'\n\n# Function to check the status of the front-end pod\ndef check_front_end_status():\n    pods = v1.list_namespaced_pod(namespace=namespace, label_selector=f'name={deployment_name}').items\n    running_pods = [pod for pod in pods if pod.status.phase == 'Running']\n    ready_pods = [pod for pod in running_pods if all(container.ready for container in pod.status.container_statuses)]\n    return len(ready_pods)\n\ndef main(duration):\n    for _ in range(duration):\n        running_and_ready = check_front_end_status()\n        print(f'Running and ready front-end pods: {running_and_ready}')\n        time.sleep(1)\n    print('Status check completed.')\n\nif __name__ == '__main__':\n    import argparse\n    parser = argparse.ArgumentParser(description='Check front-end pod status.')\n    parser.add_argument('--duration', type=int, default=5, help='Duration to check the status in seconds')\n    args = parser.parse_args()\n    main(args.duration)\n",
+                        "work_dir": "sandbox/cycle_20241127_035323/hypothesis",
+                        "fname": "k8s_front-end-replica-running.py"
+                    },
+                    "result": "Running and ready front-end pods: 1\nRunning and ready front-end pods: 1\nRunning and ready front-end pods: 1\nRunning and ready front-end pods: 1\nRunning and ready front-end pods: 1\nStatus check completed.\n"
+                },
+                "threshold": {
+                    "threshold": "The 'front-end' pod must have at least 1 running and ready replica for 95% of the time within a 1-minute monitoring period.",
+                    "reason": "The steady state we are considering is the availability of the 'front-end' pod, which currently has a single replica. The current state shows that the single replica is consistently running and ready, as indicated by the repeated output of 'Running and ready front-end pods: 1'. Given that the system is expected to maintain this state, the threshold should ensure that the single replica remains running and ready for the entire duration of the monitoring period. Since the monitoring period in the script is 5 seconds, and the Chaos Engineering experiment must be completed within 1 minute, we can set a threshold that requires the front-end pod to be running and ready for at least 95% of the time during a 1-minute period. This accounts for any minor fluctuations or delays in pod readiness checks."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241127_035323/hypothesis/unittest_front-end-replica-running_mod0.py",
+                    "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\nfrom unittest_base import K8sAPIBase\n\nclass TestFrontEndReplicaRunning(K8sAPIBase):\n    def __init__(self):\n        super().__init__()\n        self.namespace = 'sock-shop'\n        self.deployment_name = 'front-end'\n\n    def check_front_end_status(self):\n        # List all pods in the specified namespace with the label 'name=front-end'\n        pods = self.v1.list_namespaced_pod(namespace=self.namespace, label_selector=f'name={self.deployment_name}').items\n        # Filter pods that are in the 'Running' state\n        running_pods = [pod for pod in pods if pod.status.phase == 'Running']\n        # Further filter pods that are ready\n        ready_pods = [pod for pod in running_pods if all(container.ready for container in pod.status.container_statuses)]\n        return len(ready_pods)\n\n    def test_steady_state(self, duration):\n        successful_checks = 0\n        total_checks = duration\n\n        for _ in range(duration):\n            running_and_ready = self.check_front_end_status()\n            print(f'Running and ready front-end pods: {running_and_ready}')\n            if running_and_ready >= 1:\n                successful_checks += 1\n            time.sleep(1)\n\n        # Calculate the percentage of successful checks\n        success_rate = (successful_checks / total_checks) * 100\n        print(f'Success rate: {success_rate}%')\n\n        # Assert that the success rate is at least 95%\n        assert success_rate >= 95, f'Success rate {success_rate}% is below the threshold of 95%'\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Test front-end pod steady state.')\n    parser.add_argument('--duration', type=int, default=60, help='Duration to check the status in seconds')\n    args = parser.parse_args()\n\n    test = TestFrontEndReplicaRunning()\n    test.test_steady_state(args.duration)\n\n\nif __name__ == '__main__':\n    main()\n",
+                    "work_dir": "sandbox/cycle_20241127_035323/hypothesis",
+                    "fname": "unittest_front-end-replica-running_mod0.py"
+                }
+            }
+        ]
+    },
+    "fault": {
+        "event": "Black Friday Sale",
+        "faults": [
+            [
+                {
+                    "name": "StressChaos",
+                    "name_id": 0,
+                    "params": {
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "carts-db"
+                            }
+                        },
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 80
+                            },
+                            "memory": {
+                                "workers": 2,
+                                "size": "256MB"
+                            }
+                        },
+                        "containerNames": [
+                            "carts-db"
+                        ]
+                    }
+                }
+            ],
+            [
+                {
+                    "name": "PodChaos",
+                    "name_id": 0,
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "value": "1"
+                    }
+                }
+            ]
+        ],
+        "description": "During a Black Friday sale, the system is expected to handle a significant increase in traffic and load. This event will test the system's ability to maintain steady states under high demand. The 'carts-db' and 'front-end' components are critical to the user experience, as they handle shopping cart operations and the user interface, respectively. The 'carts-db' deployment lacks resource requests, which could lead to scheduling issues under resource constraints. The 'front-end' deployment has a single replica, making it vulnerable to downtime if the pod fails. To simulate the Black Friday event, we will first inject a StressChaos fault to increase CPU and memory usage on the 'carts-db' pods, testing their ability to remain running without resource requests. Next, we will inject a PodChaos fault to kill the 'front-end' pod, testing the system's ability to recover and maintain availability with a single replica. This sequence of fault injections will reveal potential weaknesses in resource allocation and redundancy, ensuring the system can handle the increased load and maintain steady states."
+    }
+}

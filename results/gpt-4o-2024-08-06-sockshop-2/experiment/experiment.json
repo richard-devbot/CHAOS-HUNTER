@@ -1,0 +1,189 @@
+{
+    "plan": {
+        "time_schedule": {
+            "thought": "To design a Chaos Engineering experiment for the Sock Shop application, we need to ensure that the system can maintain its steady states during fault injection. The experiment will be divided into three phases: pre-validation, fault-injection, and post-validation. The total duration of the experiment is constrained to 1 minute, so we need to allocate time efficiently across these phases. \n\n1. **Pre-validation Phase:** This phase ensures that the system is in a steady state before injecting any faults. Given the constraints, we will allocate 15 seconds for this phase. During this time, we will verify the two steady states: 'CartsServiceEndpointsAvailable' and 'FrontEndLivenessProbeSuccess'. This involves checking the availability of endpoints for the 'carts' service and the success rate of the liveness probe for the 'front-end' pod.\n\n2. **Fault-injection Phase:** This phase involves injecting faults to simulate the Black Friday sale scenario. We will allocate 30 seconds for this phase. The faults to be injected include:\n   - 'StressChaos' to simulate high CPU usage on the 'carts' and 'front-end' pods.\n   - 'NetworkChaos' to simulate network latency on the 'front-end' pod.\n   - 'PodChaos' to kill the single replica of the 'front-end' pod.\n   These faults will test the system's ability to handle increased load, network issues, and pod failures.\n\n3. **Post-validation Phase:** This phase ensures that the system returns to its steady states after fault injection. We will allocate 15 seconds for this phase. We will re-check the two steady states to confirm that the system has recovered and is functioning as expected.\n\nThe total time for the experiment is 1 minute, with 15 seconds for pre-validation, 30 seconds for fault injection, and 15 seconds for post-validation. This allocation allows us to efficiently test the system's resilience while adhering to the time constraint.",
+            "total_time": "1m",
+            "pre_validation_time": "15s",
+            "fault_injection_time": "30s",
+            "post_validation_time": "15s"
+        },
+        "pre_validation": {
+            "thought": "In the pre-validation phase, we need to ensure that the system is in a steady state before we proceed with fault injection. Given the constraints, we have 15 seconds to perform this validation. We will execute two unit tests to verify the steady states: 'CartsServiceEndpointsAvailable' and 'FrontEndLivenessProbeSuccess'. These tests will be executed simultaneously to maximize the use of the available time. The 'CartsServiceEndpointsAvailable' test will check if the 'carts' service has at least one endpoint available, which is crucial for the system's functionality. The 'FrontEndLivenessProbeSuccess' test will verify that the 'front-end' pod is responsive, ensuring that the user interface is operational. Both tests will run for the entire 15 seconds, with no grace period, to ensure that the system is stable before proceeding to the fault injection phase. This approach allows us to quickly confirm the system's readiness for the chaos experiment.",
+            "unit_tests": [
+                {
+                    "name": "CartsServiceEndpointsAvailable",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "pre-unittest-cartsserviceendpointsavailable",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py"
+                },
+                {
+                    "name": "FrontEndLivenessProbeSuccess",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "pre-unittest-frontendlivenessprobesuccess",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py"
+                }
+            ]
+        },
+        "fault_injection": {
+            "thought": "The fault-injection phase is designed to simulate a Black Friday sale scenario, where the system experiences high load and network issues. The goal is to observe how the system handles these conditions and whether it can maintain its steady states. Given the 30-second time constraint, the faults will be injected in a staggered manner to maximize the observation of their effects. The first set of faults will be StressChaos, targeting the 'carts' and 'front-end' pods to simulate high CPU usage. This will start immediately at the beginning of the phase and last for 10 seconds. The second fault, NetworkChaos, will introduce network latency to the 'front-end' pod, starting at the 10-second mark and lasting for 10 seconds. Finally, PodChaos will be injected at the 20-second mark, targeting the 'front-end' pod to simulate a pod failure, lasting for 10 seconds. This staggered approach allows us to observe the system's behavior under each fault condition separately and in combination, providing insights into its resilience and recovery capabilities.",
+            "fault_injection": [
+                {
+                    "name": "StressChaos",
+                    "name_id": 0,
+                    "grace_period": "0s",
+                    "duration": "10s",
+                    "workflow_name": "fault-stresschaos",
+                    "deadline": "10s",
+                    "params": {
+                        "mode": "all",
+                        "value": "2",
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 100
+                            }
+                        },
+                        "containerNames": [
+                            "carts"
+                        ],
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "carts"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "StressChaos",
+                    "name_id": 1,
+                    "grace_period": "0s",
+                    "duration": "10s",
+                    "workflow_name": "fault-stresschaos2",
+                    "deadline": "10s",
+                    "params": {
+                        "mode": "all",
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 80
+                            }
+                        },
+                        "containerNames": [
+                            "front-end"
+                        ],
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "NetworkChaos",
+                    "name_id": 0,
+                    "grace_period": "10s",
+                    "duration": "10s",
+                    "workflow_name": "fault-networkchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "delay",
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "direction": "to",
+                        "device": "eth0",
+                        "delay": {
+                            "latency": "100ms",
+                            "jitter": "10ms",
+                            "correlation": "50"
+                        }
+                    }
+                },
+                {
+                    "name": "PodChaos",
+                    "name_id": 0,
+                    "grace_period": "20s",
+                    "duration": "10s",
+                    "workflow_name": "fault-podchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "value": "1"
+                    }
+                }
+            ],
+            "unit_tests": [
+                {
+                    "name": "CartsServiceEndpointsAvailable",
+                    "grace_period": "0s",
+                    "duration": "30s",
+                    "workflow_name": "fault-unittest-cartsserviceendpointsavailable",
+                    "deadline": "5m30s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py"
+                },
+                {
+                    "name": "FrontEndLivenessProbeSuccess",
+                    "grace_period": "0s",
+                    "duration": "30s",
+                    "workflow_name": "fault-unittest-frontendlivenessprobesuccess",
+                    "deadline": "5m30s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py"
+                }
+            ]
+        },
+        "post_validation": {
+            "thought": "In the post-validation phase, we need to ensure that the system has returned to its steady states after the fault injection. Given the constraints of a 15-second total time for this phase, we will focus on quickly verifying the two defined steady states: 'CartsServiceEndpointsAvailable' and 'FrontEndLivenessProbeSuccess'. The approach is to execute both unit tests simultaneously to maximize the use of the limited time available. This simultaneous execution is feasible because the tests are independent and can run in parallel without interference. The 'CartsServiceEndpointsAvailable' test will verify that the 'carts' service has the expected number of endpoints available, while the 'FrontEndLivenessProbeSuccess' test will check that the liveness probe for the 'front-end' pod is successful. Both tests will have a grace period of 0s, starting immediately, and will run for the full 15s duration to ensure a thorough check within the time limit. This approach ensures that we can quickly confirm the system's return to its steady states after the chaos experiment.",
+            "unit_tests": [
+                {
+                    "name": "CartsServiceEndpointsAvailable",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "post-unittest-cartsserviceendpointsavailable",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py"
+                },
+                {
+                    "name": "FrontEndLivenessProbeSuccess",
+                    "grace_period": "0s",
+                    "duration": "15s",
+                    "workflow_name": "post-unittest-frontendlivenessprobesuccess",
+                    "deadline": "5m15s",
+                    "file_path": "sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py"
+                }
+            ]
+        },
+        "summary": "The Chaos Engineering experiment for the Sock Shop application is structured into three distinct phases: pre-validation, fault-injection, and post-validation, all within a total duration of one minute. \n\nIn the pre-validation phase, which lasts for 15 seconds, two unit tests are executed simultaneously to ensure the system is in a steady state before any faults are introduced. The 'CartsServiceEndpointsAvailable' test, with the workflow name 'pre-unittest-cartsserviceendpointsavailable', and the 'FrontEndLivenessProbeSuccess' test, with the workflow name 'pre-unittest-frontendlivenessprobesuccess', both start immediately with no delay and run for the entire 15 seconds. These tests check the availability of the 'carts' service endpoints and the responsiveness of the 'front-end' pod, respectively.\n\nThe fault-injection phase spans 30 seconds and involves a staggered introduction of faults to simulate a high-load scenario akin to a Black Friday sale. Initially, two 'StressChaos' faults are injected simultaneously at the start of the phase, targeting the 'carts' and 'front-end' pods to simulate high CPU usage. These have workflow names 'fault-stresschaos' and 'fault-stresschaos2', each lasting for 10 seconds. At the 10-second mark, 'NetworkChaos' is introduced to the 'front-end' pod to simulate network latency, with the workflow name 'fault-networkchaos', also lasting for 10 seconds. Finally, at the 20-second mark, 'PodChaos' is injected to simulate a pod failure on the 'front-end' pod, with the workflow name 'fault-podchaos', lasting for the remaining 10 seconds. Throughout this phase, the steady states 'CartsServiceEndpointsAvailable' and 'FrontEndLivenessProbeSuccess' are continuously verified with workflows 'fault-unittest-cartsserviceendpointsavailable' and 'fault-unittest-frontendlivenessprobesuccess', each running for the full 30 seconds.\n\nIn the post-validation phase, lasting 15 seconds, the system's return to steady states is verified. The same two unit tests from the pre-validation phase are executed simultaneously again. The 'CartsServiceEndpointsAvailable' test, with the workflow name 'post-unittest-cartsserviceendpointsavailable', and the 'FrontEndLivenessProbeSuccess' test, with the workflow name 'post-unittest-frontendlivenessprobesuccess', both start immediately with no delay and run for the entire 15 seconds. This ensures the system has recovered and is functioning as expected after the fault injections."
+    },
+    "workflow_name": "chaos-experiment-20241127-032505",
+    "workflow": {
+        "path": "sandbox/cycle_20241127_030827/experiment/workflow.yaml",
+        "content": "apiVersion: chaos-mesh.org/v1alpha1\nkind: Workflow\nmetadata:\n  name: chaos-experiment-20241127-032505\nspec:\n  entry: the-entry\n  templates:\n    #-------------------------------\n    # entry point of whole workflow\n    #-------------------------------\n    - name: the-entry\n      templateType: Serial\n      deadline: 31m\n      children:\n        - pre-validation-phase\n        - fault-injection-phase\n        - post-validation-phase\n\n    #-------------------------------------\n    # Entry point of pre-validation-phase\n    #-------------------------------------\n    - name: pre-validation-phase\n      templateType: Serial\n      deadline: 10m15s\n      children:\n        - pre-validation-parallel-workflows\n    \n    - name: pre-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m15s\n      children:\n        - pre-unittest-cartsserviceendpointsavailable\n        - pre-unittest-frontendlivenessprobesuccess\n\n    # Definitions of children of pre-validation-phase\n    - name: pre-unittest-cartsserviceendpointsavailable\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: pre-unittest-cartsserviceendpointsavailable-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: pre-unittest-frontendlivenessprobesuccess\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: pre-unittest-frontendlivenessprobesuccess-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n    \n    #--------------------------------------\n    # Entry point of fault-injection-phase\n    #--------------------------------------\n    - name: fault-injection-phase\n      templateType: Serial\n      deadline: 10m30s\n      children:\n        - fault-injection-overlapped-workflows\n\n    - name: fault-injection-parallel-workflow\n      templateType: Parallel\n      deadline: 5m30s\n      children:\n        - fault-unittest-cartsserviceendpointsavailable\n        - fault-unittest-frontendlivenessprobesuccess\n        - fault-stresschaos\n        - fault-stresschaos2\n\n    - name: fault-injection-suspend-workflow\n      templateType: Serial\n      deadline: 20s\n      children:\n        - fault-injection-suspend\n        - fault-networkchaos\n\n    - name: fault-injection-suspend\n      templateType: Suspend\n      deadline: 10s\n\n    - name: fault-injection-suspend-workflow2\n      templateType: Serial\n      deadline: 30s\n      children:\n        - fault-injection-suspend2\n        - fault-podchaos\n\n    - name: fault-injection-suspend2\n      templateType: Suspend\n      deadline: 20s\n\n    - name: fault-injection-overlapped-workflows\n      templateType: Parallel\n      deadline: 5m30s\n      children:\n        - fault-injection-parallel-workflow\n        - fault-injection-suspend-workflow\n        - fault-injection-suspend-workflow2\n\n    # Definitions of children of pre-validation-phase\n    # unit tests\n    - name: fault-unittest-cartsserviceendpointsavailable\n      templateType: Task\n      deadline: 5m30s\n      task:\n        container:\n          name: fault-unittest-cartsserviceendpointsavailable-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py --duration 30\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: fault-unittest-frontendlivenessprobesuccess\n      templateType: Task\n      deadline: 5m30s\n      task:\n        container:\n          name: fault-unittest-frontendlivenessprobesuccess-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py --duration 30\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    # fault_injections\n    - name: fault-stresschaos\n      templateType: StressChaos\n      deadline: 10s\n      stressChaos:\n        containerNames:\n          - carts\n        mode: all\n        selector:\n          labelSelectors:\n            name: carts\n          namespaces:\n            - sock-shop\n        stressors:\n          cpu:\n            load: 100\n            workers: 2\n        value: '2'\n\n\n    - name: fault-stresschaos2\n      templateType: StressChaos\n      deadline: 10s\n      stressChaos:\n        containerNames:\n          - front-end\n        mode: all\n        selector:\n          labelSelectors:\n            name: front-end\n          namespaces:\n            - sock-shop\n        stressors:\n          cpu:\n            load: 80\n            workers: 2\n\n\n    - name: fault-networkchaos\n      templateType: NetworkChaos\n      deadline: 10s\n      networkChaos:\n        action: delay\n        delay:\n          correlation: '50'\n          jitter: 10ms\n          latency: 100ms\n        device: eth0\n        direction: to\n        mode: all\n        selector:\n          labelSelectors:\n            name: front-end\n          namespaces:\n            - sock-shop\n\n\n    - name: fault-podchaos\n      templateType: PodChaos\n      deadline: 10s\n      podChaos:\n        action: pod-kill\n        mode: one\n        selector:\n          labelSelectors:\n            name: front-end\n          namespaces:\n            - sock-shop\n        value: '1'\n\n    \n    #--------------------------------------\n    # Entry point of post-validation phase\n    #--------------------------------------\n    - name: post-validation-phase\n      templateType: Serial\n      deadline: 10m15s\n      children:\n        - post-validation-parallel-workflows\n\n    - name: post-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m15s\n      children:\n        - post-unittest-cartsserviceendpointsavailable\n        - post-unittest-frontendlivenessprobesuccess\n\n    # Definitions of children of pre-validation-phase\n    - name: post-unittest-cartsserviceendpointsavailable\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: post-unittest-cartsserviceendpointsavailable-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: post-unittest-frontendlivenessprobesuccess\n      templateType: Task\n      deadline: 5m15s\n      task:\n        container:\n          name: post-unittest-frontendlivenessprobesuccess-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py --duration 15\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc",
+        "work_dir": "sandbox/cycle_20241127_030827/experiment",
+        "fname": "workflow.yaml"
+    }
+}

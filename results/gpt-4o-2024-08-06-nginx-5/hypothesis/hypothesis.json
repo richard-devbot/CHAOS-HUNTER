@@ -1,0 +1,119 @@
+{
+    "steady_states": {
+        "elems": [
+            {
+                "id": 0,
+                "name": "example-pod-running",
+                "description": "The first steady state to define should be related to the Pod defined in 'nginx/pod.yaml', as it has the most immediate and critical issues: the Pod's restart policy is set to 'Never', and it is a single Pod deployment without redundancy. These issues can lead to downtime if the Pod fails. Therefore, a steady state should be defined to ensure that the Pod is running and available. A measurable output for this steady state is the number of running Pods, which should be exactly 1, as there is only one Pod defined in the manifest.",
+                "inspection": {
+                    "tool_type": "k8s",
+                    "duration": "5s",
+                    "script": {
+                        "path": "sandbox/cycle_20241124_133152/hypothesis/k8s_example-pod-running.py",
+                        "content": "import os\nimport time\nfrom kubernetes import client, config\n\ndef check_pod_status(namespace, pod_name):\n    # Load Kubernetes configuration based on the environment\n    if os.getenv('KUBERNETES_SERVICE_HOST'):\n        config.load_incluster_config()\n    else:\n        config.load_kube_config()\n\n    v1 = client.CoreV1Api()\n    try:\n        pod = v1.read_namespaced_pod(name=pod_name, namespace=namespace)\n        return pod.status.phase\n    except client.exceptions.ApiException as e:\n        print(f\"Exception when calling CoreV1Api->read_namespaced_pod: {e}\")\n        return None\n\ndef main(duration):\n    namespace = 'default'\n    pod_name = 'example-pod'\n    running_count = 0\n    for _ in range(duration):\n        status = check_pod_status(namespace, pod_name)\n        if status == 'Running':\n            running_count += 1\n        time.sleep(1)\n    print(f\"Pod '{pod_name}' running status checked {duration} times, running count: {running_count}\")\n\nif __name__ == '__main__':\n    import argparse\n    parser = argparse.ArgumentParser(description='Check if the pod is running.')\n    parser.add_argument('--duration', type=int, default=5, help='Duration to check the pod status in seconds')\n    args = parser.parse_args()\n    main(args.duration)",
+                        "work_dir": "sandbox/cycle_20241124_133152/hypothesis",
+                        "fname": "k8s_example-pod-running.py"
+                    },
+                    "result": "Pod 'example-pod' running status checked 5 times, running count: 5\n"
+                },
+                "threshold": {
+                    "threshold": "The pod should be in the 'Running' state at least 80% of the time during the check period.",
+                    "reason": "The steady state we are considering is the 'example-pod' being in the 'Running' state. The current state shows that the pod was checked 5 times over a duration of 5 seconds, and it was running each time, resulting in a running count of 5. This indicates that the pod is consistently running without any downtime during the check period. To define a reasonable threshold, we need to account for potential minor fluctuations or delays in pod status updates. Therefore, a threshold that allows for a small tolerance would be appropriate. Given the current state, a threshold where the pod is running at least 80% of the time during the check period would be reasonable. This means that out of 5 checks, the pod should be running at least 4 times to satisfy the threshold, which aligns with the current state where it was running all 5 times."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241124_133152/hypothesis/unittest_example-pod-running_mod0.py",
+                    "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\nfrom unittest_base import K8sAPIBase\n\nclass TestPodSteadyState(K8sAPIBase):\n    def __init__(self):\n        super().__init__()\n\n    def check_pod_status(self, namespace, pod_name):\n        try:\n            pod = self.v1.read_namespaced_pod(name=pod_name, namespace=namespace)\n            return pod.status.phase\n        except client.exceptions.ApiException as e:\n            print(f\"Exception when calling CoreV1Api->read_namespaced_pod: {e}\")\n            return None\n\n    def test_pod_running_state(self, duration):\n        namespace = 'default'\n        pod_name = 'example-pod'\n        running_count = 0\n\n        # Check the pod status every second for the specified duration\n        for _ in range(duration):\n            status = self.check_pod_status(namespace, pod_name)\n            if status == 'Running':\n                running_count += 1\n            time.sleep(1)\n\n        # Calculate the running ratio\n        running_ratio = running_count / duration\n\n        # Assert that the pod is running at least 80% of the time\n        assert running_ratio >= 0.8, f\"Pod '{pod_name}' was not running at least 80% of the time. Running ratio: {running_ratio}\"\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Test if the pod is running at least 80% of the time.')\n    parser.add_argument('--duration', type=int, default=5, help='Duration to check the pod status in seconds')\n    args = parser.parse_args()\n\n    test = TestPodSteadyState()\n    test.test_pod_running_state(args.duration)\n\n\nif __name__ == '__main__':\n    main()",
+                    "work_dir": "sandbox/cycle_20241124_133152/hypothesis",
+                    "fname": "unittest_example-pod-running_mod0.py"
+                }
+            },
+            {
+                "id": 1,
+                "name": "example-service-http-response-200",
+                "description": "The next steady state to consider should be related to the Service defined in 'nginx/service.yaml'. The Service is crucial for ensuring that the web server is accessible to clients. A potential issue with the Service could be related to its ability to route traffic correctly to the Pod. Therefore, a steady state should be defined to ensure that the Service is correctly routing traffic to the Pod. A measurable output for this steady state could be the Service's ability to respond to HTTP requests successfully. This can be measured by checking the HTTP response code, which should be 200 (OK) for successful requests.",
+                "inspection": {
+                    "tool_type": "k6",
+                    "duration": "5s",
+                    "script": {
+                        "path": "sandbox/cycle_20241124_133152/hypothesis/k6_example-service-http-response-200.js",
+                        "content": "import http from 'k6/http';\nimport { check } from 'k6';\n\nexport const options = {\n  vus: 5,\n  duration: '5s',\n};\n\nexport default function () {\n  const res = http.get('http://example-service.default.svc.cluster.local:80');\n  check(res, {\n    'is status 200': (r) => r.status === 200,\n  });\n}",
+                        "work_dir": "sandbox/cycle_20241124_133152/hypothesis",
+                        "fname": "k6_example-service-http-response-200.js"
+                    },
+                    "result": "\n     \u2713 is status 200\n\n     checks.........................: 100.00% 71072 out of 71072\n     data_received..................: 60 MB   12 MB/s\n     data_sent......................: 7.8 MB  1.6 MB/s\n     http_req_blocked...............: avg=7.8\u00b5s    min=1.09\u00b5s   med=3.77\u00b5s   max=2.59ms p(90)=6.24\u00b5s   p(95)=7.84\u00b5s  \n     http_req_connecting............: avg=1.92\u00b5s   min=0s       med=0s       max=1.46ms p(90)=0s       p(95)=0s      \n     http_req_duration..............: avg=228.03\u00b5s min=75.71\u00b5s  med=202.17\u00b5s max=2.43ms p(90)=287.5\u00b5s  p(95)=338.84\u00b5s\n       { expected_response:true }...: avg=228.03\u00b5s min=75.71\u00b5s  med=202.17\u00b5s max=2.43ms p(90)=287.5\u00b5s  p(95)=338.84\u00b5s\n     http_req_failed................: 0.00%   0 out of 71072\n     http_req_receiving.............: avg=53.35\u00b5s  min=11.74\u00b5s  med=42.23\u00b5s  max=1.97ms p(90)=69.42\u00b5s  p(95)=87.68\u00b5s \n     http_req_sending...............: avg=15.45\u00b5s  min=3.45\u00b5s   med=11.52\u00b5s  max=1.83ms p(90)=17.97\u00b5s  p(95)=23.25\u00b5s \n     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s     p(90)=0s       p(95)=0s      \n     http_req_waiting...............: avg=159.22\u00b5s min=50.6\u00b5s   med=144.28\u00b5s max=1.6ms  p(90)=215.17\u00b5s p(95)=246.81\u00b5s\n     http_reqs......................: 71072   14212.721341/s\n     iteration_duration.............: avg=336.69\u00b5s min=125.71\u00b5s med=292.67\u00b5s max=4.07ms p(90)=399.22\u00b5s p(95)=515.5\u00b5s \n     iterations.....................: 71072   14212.721341/s\n     vus............................: 5       min=5              max=5\n     vus_max........................: 5       min=5              max=5\n\n"
+                },
+                "threshold": {
+                    "threshold": "At least 95% of HTTP requests should return a status code 200.",
+                    "reason": "The steady state we are considering is the ability of the 'example-service' to respond with HTTP status code 200, indicating successful handling of requests. The k6 test results show that 100% of the requests received a status 200 response, which is the desired outcome. To account for potential fluctuations in a real-world scenario, we should set a threshold that allows for a small percentage of requests to fail while still considering the system to be in a steady state. A reasonable threshold would be to expect at least 95% of the requests to return a status 200, allowing for some minor network issues or transient errors."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241124_133152/hypothesis/unittest_example-service-http-response-200_mod0.js",
+                    "content": "import http from 'k6/http';\nimport { check } from 'k6';\n\nexport const options = {\n  vus: 5,\n  duration: '5s',\n  thresholds: {\n    // Adding a threshold to ensure that at least 95% of requests return a status code 200\n    'http_req_failed': ['rate<0.05'], // Less than 5% of requests should fail\n  },\n};\n\nexport default function () {\n  const res = http.get('http://example-service.default.svc.cluster.local:80');\n  check(res, {\n    'is status 200': (r) => r.status === 200,\n  });\n}",
+                    "work_dir": "sandbox/cycle_20241124_133152/hypothesis",
+                    "fname": "unittest_example-service-http-response-200_mod0.js"
+                }
+            }
+        ]
+    },
+    "fault": {
+        "event": "Cyber Attack",
+        "faults": [
+            [
+                {
+                    "name": "PodChaos",
+                    "name_id": 0,
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "default"
+                            ],
+                            "labelSelectors": {
+                                "app": "example"
+                            }
+                        },
+                        "value": "1"
+                    }
+                }
+            ],
+            [
+                {
+                    "name": "NetworkChaos",
+                    "name_id": 1,
+                    "params": {
+                        "action": "delay",
+                        "direction": "to",
+                        "target": {
+                            "mode": "all",
+                            "selector": {
+                                "namespaces": [
+                                    "default"
+                                ],
+                                "labelSelectors": {
+                                    "app": "example"
+                                }
+                            }
+                        },
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "default"
+                            ],
+                            "labelSelectors": {
+                                "app": "example"
+                            }
+                        },
+                        "device": "eth0",
+                        "delay": {
+                            "latency": "100ms",
+                            "jitter": "10ms",
+                            "correlation": "50"
+                        }
+                    }
+                }
+            ]
+        ],
+        "description": "Given the system's weaknesses, a cyber attack targeting the web server could be highly impactful. The system's main vulnerabilities are the single Pod deployment without redundancy and the Pod's restart policy set to 'Never'. These issues can lead to downtime if the Pod fails, affecting the steady state of the system. To simulate a cyber attack, we can inject faults that exploit these weaknesses. First, we can use PodChaos to simulate a Pod failure, which will test the system's ability to maintain the 'example-pod-running' steady state. Since the Pod won't restart automatically, this will likely cause downtime. Next, we can use NetworkChaos to simulate network latency, which will test the 'example-service-http-response-200' steady state by affecting the Service's ability to route traffic correctly. This sequence simulates a cyber attack by first taking down the Pod and then degrading the network performance, which could happen during a coordinated attack."
+    }
+}

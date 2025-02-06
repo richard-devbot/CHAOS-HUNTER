@@ -1,0 +1,159 @@
+{
+    "steady_states": {
+        "elems": [
+            {
+                "id": 0,
+                "name": "CartsServiceEndpointsAvailable",
+                "description": "The first issue to address is the 'Missing Port Configuration' in the Service manifests. This issue is likely to cause connectivity problems, making it a critical aspect to verify. Among the manifests with this issue, 'sock-shop-2/manifests/02-carts-svc.yaml' is selected as it is the first in the list. The steady state will ensure that the Service is functioning correctly by checking the number of endpoints available for the 'carts' service, which should match the number of replicas in the corresponding Deployment.",
+                "inspection": {
+                    "tool_type": "k8s",
+                    "duration": "5s",
+                    "script": {
+                        "path": "sandbox/cycle_20241127_030827/hypothesis/k8s_CartsServiceEndpointsAvailable.py",
+                        "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\n\n# Load Kubernetes configuration based on the environment\nif os.getenv('KUBERNETES_SERVICE_HOST'):\n    config.load_incluster_config()\nelse:\n    config.load_kube_config()\n\nv1 = client.CoreV1Api()\napps_v1 = client.AppsV1Api()\n\nnamespace = 'sock-shop'\nservice_name = 'carts'\ndeployment_name = 'carts'\n\n# Function to get the number of endpoints\ndef get_endpoints_count():\n    endpoints = v1.read_namespaced_endpoints(service_name, namespace)\n    return len(endpoints.subsets[0].addresses) if endpoints.subsets else 0\n\n# Function to get the number of replicas\ndef get_replicas_count():\n    deployment = apps_v1.read_namespaced_deployment(deployment_name, namespace)\n    return deployment.status.replicas\n\n# Main function to check the state\nif __name__ == '__main__':\n    parser = argparse.ArgumentParser(description='Check Carts Service Endpoints Availability')\n    parser.add_argument('--duration', type=int, default=5, help='Duration to check the state in seconds')\n    args = parser.parse_args()\n\n    duration = args.duration\n    for _ in range(duration):\n        endpoints_count = get_endpoints_count()\n        replicas_count = get_replicas_count()\n        print(f'Endpoints available: {endpoints_count}, Expected replicas: {replicas_count}')\n        time.sleep(1)\n\n    print('Check completed.')",
+                        "work_dir": "sandbox/cycle_20241127_030827/hypothesis",
+                        "fname": "k8s_CartsServiceEndpointsAvailable.py"
+                    },
+                    "result": "Endpoints available: 2, Expected replicas: 2\nEndpoints available: 2, Expected replicas: 2\nEndpoints available: 2, Expected replicas: 2\nEndpoints available: 2, Expected replicas: 2\nEndpoints available: 2, Expected replicas: 2\nCheck completed.\n"
+                },
+                "threshold": {
+                    "threshold": "At least 1 endpoint must be available for the 'carts' service 95% of the time during a 1-minute period, with a target of 2 endpoints available.",
+                    "reason": "The steady state to be verified is the availability of endpoints for the 'carts' service, which should match the number of replicas specified in the corresponding Deployment. The Deployment for 'carts' specifies 2 replicas, and the current state shows that there are 2 endpoints available consistently over a period of 5 seconds. This indicates that the system is currently in a healthy state. To account for potential fluctuations and ensure the system remains resilient, a reasonable threshold should allow for a small tolerance. Given the redundancy with 2 replicas, the threshold can be set to require at least 1 endpoint to be available at all times, but ideally, both should be available. Additionally, the threshold should specify that this condition must be met for at least 95% of the time during the 1-minute chaos experiment, allowing for brief disruptions without failing the steady state check."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241127_030827/hypothesis/unittest_CartsServiceEndpointsAvailable_mod1.py",
+                    "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\nfrom unittest_base import K8sAPIBase\n\nclass TestCartsServiceEndpoints(K8sAPIBase):\n    def __init__(self):\n        super().__init__()\n        self.apps_v1 = client.AppsV1Api()  # Initialize AppsV1Api\n        self.namespace = 'sock-shop'\n        self.service_name = 'carts'\n        self.deployment_name = 'carts'\n\n    def get_endpoints_count(self):\n        endpoints = self.v1.read_namespaced_endpoints(self.service_name, self.namespace)\n        return len(endpoints.subsets[0].addresses) if endpoints.subsets else 0\n\n    def get_replicas_count(self):\n        deployment = self.apps_v1.read_namespaced_deployment(self.deployment_name, self.namespace)  # Use AppsV1Api\n        return deployment.status.replicas\n\n    def test_endpoints_availability(self, duration):\n        success_count = 0\n        total_checks = duration\n\n        for _ in range(duration):\n            endpoints_count = self.get_endpoints_count()\n            replicas_count = self.get_replicas_count()\n            print(f'Endpoints available: {endpoints_count}, Expected replicas: {replicas_count}')\n\n            # Check if at least 1 endpoint is available\n            if endpoints_count >= 1:\n                success_count += 1\n\n            time.sleep(1)\n\n        # Calculate the success rate\n        success_rate = (success_count / total_checks) * 100\n        print(f'Success rate: {success_rate}%')\n\n        # Assert that the success rate is at least 95%\n        assert success_rate >= 95, f'Success rate {success_rate}% is below the threshold of 95%'\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Test Carts Service Endpoints Availability')\n    parser.add_argument('--duration', type=int, default=60, help='Duration to check the state in seconds')\n    args = parser.parse_args()\n\n    test = TestCartsServiceEndpoints()\n    test.test_endpoints_availability(args.duration)\n\n\nif __name__ == '__main__':\n    main()\n",
+                    "work_dir": "sandbox/cycle_20241127_030827/hypothesis",
+                    "fname": "unittest_CartsServiceEndpointsAvailable_mod1.py"
+                }
+            },
+            {
+                "id": 1,
+                "name": "FrontEndLivenessProbeSuccess",
+                "description": "The next issue to address is the 'Single Replica Deployment' in the 'sock-shop-2/manifests/09-front-end-dep.yaml'. This issue is critical because having only one replica can lead to downtime if the pod fails. To ensure the system's resilience, we need to verify that the single replica of the 'front-end' deployment is always available. The steady state will check the availability of the 'front-end' pod by ensuring that the liveness probe is successful 95% of the time during a 1-minute period. This will help us confirm that the single replica is stable and responsive, even though it lacks redundancy.",
+                "inspection": {
+                    "tool_type": "k8s",
+                    "duration": "60s",
+                    "script": {
+                        "path": "sandbox/cycle_20241127_030827/hypothesis/k8s_FrontEndLivenessProbeSuccess.py",
+                        "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\n\ndef check_frontend_liveness(namespace, duration):\n    # Load Kubernetes configuration based on the environment\n    if os.getenv('KUBERNETES_SERVICE_HOST'):\n        config.load_incluster_config()\n    else:\n        config.load_kube_config()\n\n    v1 = client.CoreV1Api()\n    success_count = 0\n    total_checks = 0\n\n    for _ in range(duration):\n        pods = v1.list_namespaced_pod(namespace=namespace, label_selector=\"name=front-end\").items\n        if pods:\n            pod = pods[0]\n            if pod.status.conditions:\n                for condition in pod.status.conditions:\n                    if condition.type == \"Ready\" and condition.status == \"True\":\n                        success_count += 1\n                        break\n        total_checks += 1\n        time.sleep(1)\n\n    success_rate = (success_count / total_checks) * 100\n    print(f\"Liveness Probe Success Rate: {success_rate}%\")\n    return success_rate\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Check Front-End Liveness Probe Success')\n    parser.add_argument('--duration', type=int, default=60, help='Duration to check the liveness probe in seconds')\n    args = parser.parse_args()\n\n    namespace = 'sock-shop'\n    success_rate = check_frontend_liveness(namespace, args.duration)\n    if success_rate >= 95:\n        print(\"Liveness probe is successful 95% of the time.\")\n    else:\n        print(\"Liveness probe success rate is below 95%.\")\n\nif __name__ == '__main__':\n    main()",
+                        "work_dir": "sandbox/cycle_20241127_030827/hypothesis",
+                        "fname": "k8s_FrontEndLivenessProbeSuccess.py"
+                    },
+                    "result": "Liveness Probe Success Rate: 100.0%\nLiveness probe is successful 95% of the time.\n"
+                },
+                "threshold": {
+                    "threshold": "The liveness probe for the 'front-end' pod must be successful at least 95% of the time during a 1-minute monitoring period.",
+                    "reason": "The steady state to be verified is the availability of the 'front-end' pod, specifically ensuring that the liveness probe is successful 95% of the time during a 1-minute period. The current state shows a 100% success rate, which is above the required 95%. To account for fluctuations and ensure the system remains stable, we can set a threshold that allows for some tolerance. Given that the current success rate is 100%, setting the threshold at 95% is reasonable and ensures that the system is considered stable even if there are minor fluctuations. This threshold is also aligned with the requirement to complete the Chaos-Engineering experiment within 1 minute, as it allows for quick verification of the system's stability."
+                },
+                "unittest": {
+                    "path": "sandbox/cycle_20241127_030827/hypothesis/unittest_FrontEndLivenessProbeSuccess_mod0.py",
+                    "content": "import os\nimport time\nimport argparse\nfrom kubernetes import client, config\nfrom unittest_base import K8sAPIBase\n\nclass TestFrontEndLivenessProbe(K8sAPIBase):\n    def check_frontend_liveness(self, namespace, duration):\n        success_count = 0\n        total_checks = 0\n\n        for _ in range(duration):\n            # List pods with the label 'name=front-end' in the specified namespace\n            pods = self.v1.list_namespaced_pod(namespace=namespace, label_selector=\"name=front-end\").items\n            if pods:\n                pod = pods[0]\n                if pod.status.conditions:\n                    for condition in pod.status.conditions:\n                        if condition.type == \"Ready\" and condition.status == \"True\":\n                            success_count += 1\n                            break\n            total_checks += 1\n            time.sleep(1)\n\n        # Calculate the success rate of the liveness probe\n        success_rate = (success_count / total_checks) * 100\n        print(f\"Liveness Probe Success Rate: {success_rate}%\")\n        return success_rate\n\n    def test_liveness_probe_success_rate(self, namespace='sock-shop', duration=60):\n        # Check the liveness probe success rate\n        success_rate = self.check_frontend_liveness(namespace, duration)\n        # Assert that the success rate is at least 95%\n        assert success_rate >= 95, f\"Liveness probe success rate is below 95%: {success_rate}%\"\n\n\ndef main():\n    parser = argparse.ArgumentParser(description='Test Front-End Liveness Probe Success Rate')\n    parser.add_argument('--duration', type=int, default=60, help='Duration to check the liveness probe in seconds')\n    args = parser.parse_args()\n\n    # Create an instance of the test class\n    test_instance = TestFrontEndLivenessProbe()\n    # Run the test with the specified duration\n    test_instance.test_liveness_probe_success_rate(duration=args.duration)\n\n\nif __name__ == '__main__':\n    main()",
+                    "work_dir": "sandbox/cycle_20241127_030827/hypothesis",
+                    "fname": "unittest_FrontEndLivenessProbeSuccess_mod0.py"
+                }
+            }
+        ]
+    },
+    "fault": {
+        "event": "Black Friday Sale",
+        "faults": [
+            [
+                {
+                    "name": "StressChaos",
+                    "name_id": 0,
+                    "params": {
+                        "mode": "all",
+                        "value": "2",
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 100
+                            }
+                        },
+                        "containerNames": [
+                            "carts"
+                        ],
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "carts"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "StressChaos",
+                    "name_id": 1,
+                    "params": {
+                        "mode": "all",
+                        "stressors": {
+                            "cpu": {
+                                "workers": 2,
+                                "load": 80
+                            }
+                        },
+                        "containerNames": [
+                            "front-end"
+                        ],
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        }
+                    }
+                }
+            ],
+            [
+                {
+                    "name": "NetworkChaos",
+                    "name_id": 0,
+                    "params": {
+                        "action": "delay",
+                        "mode": "all",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "direction": "to",
+                        "device": "eth0",
+                        "delay": {
+                            "latency": "100ms",
+                            "jitter": "10ms",
+                            "correlation": "50"
+                        }
+                    }
+                }
+            ],
+            [
+                {
+                    "name": "PodChaos",
+                    "name_id": 0,
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "sock-shop"
+                            ],
+                            "labelSelectors": {
+                                "name": "front-end"
+                            }
+                        },
+                        "value": "1"
+                    }
+                }
+            ]
+        ],
+        "description": "During a Black Friday sale, the system is expected to handle a significant increase in traffic and load. This event will test the system's ability to maintain steady states under high demand. The 'CartsServiceEndpointsAvailable' steady state is crucial as it ensures the availability of the carts service, which is essential for users to add items to their cart. The 'FrontEndLivenessProbeSuccess' steady state is also critical as it ensures the front-end is responsive, allowing users to browse and make purchases. The system's weaknesses include missing port configurations, a single replica deployment for the front-end, and high initial delays for probes. To simulate the Black Friday event, we will first inject a 'StressChaos' fault to simulate high CPU usage on the 'carts' and 'front-end' pods, testing their ability to handle increased load. Next, we will inject a 'NetworkChaos' fault to simulate network latency, testing the system's resilience to network issues during high traffic. Finally, we will inject a 'PodChaos' fault to kill the single replica of the 'front-end' pod, testing the system's ability to recover from pod failures without redundancy."
+    }
+}

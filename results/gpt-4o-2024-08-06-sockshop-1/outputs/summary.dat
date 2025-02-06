@@ -1,0 +1,11 @@
+The Chaos Engineering cycle involves a detailed examination and testing of a Kubernetes-based microservices application, specifically the Sock Shop e-commerce platform. The cycle begins with understanding the user inputs, which include various Kubernetes manifests that define the deployment and service configurations for different components of the application, such as carts, catalogue, orders, payment, and user services, along with their respective databases.
+
+The system's resiliency issues are identified, including missing resource requests, single replica deployments, high initial delays for liveness probes, and missing port specifications in services. These issues could lead to potential downtime or connectivity problems under certain conditions.
+
+The Chaos Engineering experiment is designed to test the hypothesis that the system can maintain its steady states even when faults are injected. Two steady states are defined: ensuring the 'carts-db' deployment maintains at least 2 ready replicas 95% of the time, and the 'front-end' deployment maintains at least 1 ready replica 100% of the time.
+
+The experiment is divided into three phases: pre-validation, fault-injection, and post-validation, all to be completed within 1 minute. The pre-validation phase checks the system's steady state before fault injection. The fault-injection phase simulates a Black Friday sale scenario using Chaos Mesh, injecting StressChaos on the 'carts-db' deployment and PodChaos on the 'front-end' deployment. The post-validation phase verifies if the system returns to its steady state after the faults are removed.
+
+The first experiment attempt revealed that while the 'carts-db' component maintained its steady state, the 'front-end' component failed to do so during the fault-injection and post-validation phases. The analysis suggested increasing redundancy for the 'front-end' deployment and defining resource requests for the 'carts-db' deployment.
+
+After implementing these improvements, the second experiment attempt was successful, with all unit tests passing, indicating that the system could maintain its steady states under the simulated fault conditions.

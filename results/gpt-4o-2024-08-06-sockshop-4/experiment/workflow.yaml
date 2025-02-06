@@ -1,0 +1,194 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: chaos-experiment-20241127-042755
+spec:
+  entry: the-entry
+  templates:
+    #-------------------------------
+    # entry point of whole workflow
+    #-------------------------------
+    - name: the-entry
+      templateType: Serial
+      deadline: 25m21s
+      children:
+        - pre-validation-phase
+        - fault-injection-phase
+        - post-validation-phase
+
+    #-------------------------------------
+    # Entry point of pre-validation-phase
+    #-------------------------------------
+    - name: pre-validation-phase
+      templateType: Serial
+      deadline: 10m15s
+      children:
+        - pre-validation-parallel-workflows
+    
+    - name: pre-validation-parallel-workflows
+      templateType: Parallel
+      deadline: 5m15s
+      children:
+        - pre-unittest-carts-db-pod-count
+        - pre-unittest-front-end-pod-count
+
+    # Definitions of children of pre-validation-phase
+    - name: pre-unittest-carts-db-pod-count
+      templateType: Task
+      deadline: 5m15s
+      task:
+        container:
+          name: pre-unittest-carts-db-pod-count-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py --duration 15"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    - name: pre-unittest-front-end-pod-count
+      templateType: Task
+      deadline: 5m15s
+      task:
+        container:
+          name: pre-unittest-front-end-pod-count-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py --duration 15"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+    
+    #--------------------------------------
+    # Entry point of fault-injection-phase
+    #--------------------------------------
+    - name: fault-injection-phase
+      templateType: Serial
+      deadline: 5m
+      children:
+        - fault-stresschaos
+        - fault-podchaos
+        - fault-networkchaos
+
+    
+
+    # Definitions of children of pre-validation-phase
+    # unit tests
+
+
+    # fault_injections
+    - name: fault-stresschaos
+      templateType: StressChaos
+      deadline: 10s
+      stressChaos:
+        containerNames:
+          - carts-db
+        mode: all
+        selector:
+          labelSelectors:
+            name: carts-db
+          namespaces:
+            - sock-shop
+        stressors:
+          cpu:
+            load: 100
+            workers: 2
+          memory:
+            size: 256MB
+            workers: 2
+
+
+    - name: fault-podchaos
+      templateType: PodChaos
+      deadline: 10s
+      podChaos:
+        action: pod-kill
+        mode: one
+        selector:
+          labelSelectors:
+            name: front-end
+          namespaces:
+            - sock-shop
+
+
+    - name: fault-networkchaos
+      templateType: NetworkChaos
+      deadline: 10s
+      networkChaos:
+        action: delay
+        delay:
+          correlation: '50'
+          jitter: 10ms
+          latency: 100ms
+        device: eth0
+        direction: to
+        mode: all
+        selector:
+          labelSelectors:
+            name: front-end
+          namespaces:
+            - sock-shop
+
+    
+    #--------------------------------------
+    # Entry point of post-validation phase
+    #--------------------------------------
+    - name: post-validation-phase
+      templateType: Serial
+      deadline: 10m6s
+      children:
+        - post-validation-parallel-workflows
+
+    - name: post-validation-parallel-workflows
+      templateType: Parallel
+      deadline: 5m6s
+      children:
+        - post-unittest-carts-db-pod-count
+        - post-unittest-front-end-pod-count
+
+    # Definitions of children of pre-validation-phase
+    - name: post-unittest-carts-db-pod-count
+      templateType: Task
+      deadline: 5m6s
+      task:
+        container:
+          name: post-unittest-carts-db-pod-count-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_carts-db-pod-count_mod0.py --duration 6"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc
+
+    - name: post-unittest-front-end-pod-count
+      templateType: Task
+      deadline: 5m6s
+      task:
+        container:
+          name: post-unittest-front-end-pod-count-container
+          image: chaos-eater/k8sapi:1.0
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args: ["python /chaos-eater/sandbox/cycle_20241127_041819/hypothesis/unittest_front-end-pod-count_mod0.py --duration 6"]
+          volumeMounts:
+            - name: pvc-volume
+              mountPath: /chaos-eater
+        volumes:
+          - name: pvc-volume
+            persistentVolumeClaim:
+              claimName: pvc

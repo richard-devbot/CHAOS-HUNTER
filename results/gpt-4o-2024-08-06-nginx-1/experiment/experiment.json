@@ -1,0 +1,125 @@
+{
+    "plan": {
+        "time_schedule": {
+            "thought": "Given the constraints and the nature of the system, we need to design a Chaos Engineering experiment that fits within a 1-minute timeframe. The experiment will be divided into three phases: pre-validation, fault-injection, and post-validation. \n\n1. **Pre-validation Phase**: This phase ensures that the system is in a steady state before we introduce any faults. We need to verify that the Pod is running and the service is available. Since the steady state checks are relatively quick (5 seconds for Pod status and 5 seconds for service availability), we can allocate 10 seconds for this phase.\n\n2. **Fault Injection Phase**: This is the core of the experiment where we introduce faults to observe the system's behavior. We have two faults to inject: PodChaos to kill the Pod and NetworkChaos to partition the network. Given the time constraint, we will inject these faults sequentially but quickly. We can allocate 30 seconds for this phase, allowing 15 seconds for each fault to take effect and observe the immediate impact.\n\n3. **Post-validation Phase**: After the faults are removed, we need to ensure that the system returns to its steady state. Similar to the pre-validation phase, we will check the Pod's running status and the service's availability. We can allocate 20 seconds for this phase to ensure the system stabilizes and meets the steady state thresholds.\n\nThe total time for the experiment is 60 seconds, which is within the 1-minute limit. This allocation allows us to thoroughly test the system's resilience while adhering to the time constraint.",
+            "total_time": "60s",
+            "pre_validation_time": "10s",
+            "fault_injection_time": "30s",
+            "post_validation_time": "20s"
+        },
+        "pre_validation": {
+            "thought": "In the pre-validation phase, we need to ensure that the system is in its expected steady state before we proceed with fault injection. Given the constraints, we have 10 seconds to perform these checks. We have two steady states to verify: the Pod's running status and the Service's availability. Since both checks are critical to ensure the system's readiness, they will be executed simultaneously to maximize the use of the available time. The Pod's running status will be checked continuously for 5 seconds, while the Service's availability will be tested using a k6 script for the same duration. This approach ensures that both steady states are verified within the 10-second window, allowing us to confidently proceed to the fault injection phase.",
+            "unit_tests": [
+                {
+                    "name": "PodRunningStatusNginxPodYaml",
+                    "grace_period": "0s",
+                    "duration": "5s",
+                    "workflow_name": "pre-unittest-podrunningstatusnginxpodyaml",
+                    "deadline": "5m5s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py"
+                },
+                {
+                    "name": "ServiceAvailabilityNginxServiceYaml",
+                    "grace_period": "0s",
+                    "duration": "5s",
+                    "workflow_name": "pre-unittest-serviceavailabilitynginxserviceyaml",
+                    "deadline": "5m5s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js"
+                }
+            ]
+        },
+        "fault_injection": {
+            "thought": "In this fault-injection phase, we aim to simulate a cyber attack scenario by injecting two types of faults: PodChaos and NetworkChaos. The total duration for this phase is 30 seconds, so we need to carefully schedule the fault injections and unit tests to fit within this timeframe. \n\nFirst, we will inject the PodChaos fault to simulate a pod failure. This will test the system's ability to maintain the steady state of service availability when the pod is killed. We will start this fault injection immediately at the beginning of the phase (grace period of 0s) and let it run for 10 seconds. \n\nSimultaneously, we will run the unit test for the first steady state, 'PodRunningStatusNginxPodYaml', to verify if the pod remains in the 'Running' state for at least 90% of the time. This test will also start at 0s and run for 10 seconds, aligning with the PodChaos fault duration.\n\nNext, we will inject the NetworkChaos fault to simulate a network partition. This will test the system's ability to maintain service availability despite network disruptions. We will start this fault injection at 10 seconds (grace period of 10s) and let it run for another 10 seconds.\n\nDuring the NetworkChaos fault, we will run the unit test for the second steady state, 'ServiceAvailabilityNginxServiceYaml', to verify if the HTTP response rate remains at or above 99.5%. This test will start at 10 seconds and run for 10 seconds, aligning with the NetworkChaos fault duration.\n\nBy staggering the fault injections and aligning them with the unit tests, we can effectively observe the system's behavior under each fault condition and ensure that the steady states are verified during the fault-injection phase.",
+            "fault_injection": [
+                {
+                    "name": "PodChaos",
+                    "name_id": 0,
+                    "grace_period": "0s",
+                    "duration": "10s",
+                    "workflow_name": "fault-podchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "pod-kill",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "default"
+                            ],
+                            "labelSelectors": {
+                                "app": "example"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "NetworkChaos",
+                    "name_id": 1,
+                    "grace_period": "10s",
+                    "duration": "10s",
+                    "workflow_name": "fault-networkchaos",
+                    "deadline": "10s",
+                    "params": {
+                        "action": "partition",
+                        "mode": "one",
+                        "selector": {
+                            "namespaces": [
+                                "default"
+                            ],
+                            "labelSelectors": {
+                                "app": "example"
+                            }
+                        },
+                        "direction": "both"
+                    }
+                }
+            ],
+            "unit_tests": [
+                {
+                    "name": "PodRunningStatusNginxPodYaml",
+                    "grace_period": "0s",
+                    "duration": "10s",
+                    "workflow_name": "fault-unittest-podrunningstatusnginxpodyaml",
+                    "deadline": "5m10s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py"
+                },
+                {
+                    "name": "ServiceAvailabilityNginxServiceYaml",
+                    "grace_period": "10s",
+                    "duration": "10s",
+                    "workflow_name": "fault-unittest-serviceavailabilitynginxserviceyaml",
+                    "deadline": "5m10s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js"
+                }
+            ]
+        },
+        "post_validation": {
+            "thought": "In the post-validation phase, we need to ensure that the system has returned to its steady states after the fault injection. Given the constraints of a 20-second total time for this phase, we will conduct unit tests to verify each steady state. The tests will be executed sequentially due to the short time frame, ensuring that each steady state is verified independently. The first test will check the Pod's running status, as this is critical to ensure that the Pod has recovered from the PodChaos fault. The second test will verify the service availability, ensuring that the network partition did not cause lasting disruption. Each test will have a short grace period to allow the system to stabilize after the fault injection, followed by a brief duration to perform the checks. This approach ensures that we can quickly verify the system's recovery while adhering to the time constraints.",
+            "unit_tests": [
+                {
+                    "name": "PodRunningStatusNginxPodYaml",
+                    "grace_period": "2s",
+                    "duration": "8s",
+                    "workflow_name": "post-unittest-podrunningstatusnginxpodyaml",
+                    "deadline": "5m8s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py"
+                },
+                {
+                    "name": "ServiceAvailabilityNginxServiceYaml",
+                    "grace_period": "2s",
+                    "duration": "8s",
+                    "workflow_name": "post-unittest-serviceavailabilitynginxserviceyaml",
+                    "deadline": "5m8s",
+                    "file_path": "sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js"
+                }
+            ]
+        },
+        "summary": "The Chaos Engineering experiment is structured into three phases within a 1-minute timeframe: pre-validation, fault-injection, and post-validation. \n\nIn the pre-validation phase, which lasts for 10 seconds, two unit tests are executed simultaneously to ensure the system is in a steady state. The first test, 'PodRunningStatusNginxPodYaml', checks the Pod's running status with a workflow named 'pre-unittest-podrunningstatusnginxpodyaml'. It starts immediately and runs for 5 seconds. Concurrently, the second test, 'ServiceAvailabilityNginxServiceYaml', verifies the service's availability using a k6 script, with a workflow named 'pre-unittest-serviceavailabilitynginxserviceyaml'. This test also starts immediately and runs for 5 seconds.\n\nThe fault-injection phase spans 30 seconds and involves two sequential fault injections. Initially, the 'PodChaos' fault is injected to simulate a pod failure, starting at the beginning of the phase and lasting for 10 seconds. This is managed by the 'fault-podchaos' workflow. Simultaneously, the unit test 'PodRunningStatusNginxPodYaml' is conducted to verify the pod's running status, starting at 0 seconds and running for 10 seconds, with the workflow 'fault-unittest-podrunningstatusnginxpodyaml'. Following this, the 'NetworkChaos' fault is injected to simulate a network partition, starting at 10 seconds and lasting for 10 seconds, managed by the 'fault-networkchaos' workflow. Concurrently, the unit test 'ServiceAvailabilityNginxServiceYaml' is executed to verify service availability, starting at 10 seconds and running for 10 seconds, with the workflow 'fault-unittest-serviceavailabilitynginxserviceyaml'.\n\nIn the post-validation phase, which lasts for 20 seconds, two unit tests are executed sequentially to ensure the system has returned to its steady state. The first test, 'PodRunningStatusNginxPodYaml', checks the Pod's running status, starting after a 2-second grace period and running for 8 seconds, with the workflow 'post-unittest-podrunningstatusnginxpodyaml'. The second test, 'ServiceAvailabilityNginxServiceYaml', verifies service availability, also starting after a 2-second grace period and running for 8 seconds, with the workflow 'post-unittest-serviceavailabilitynginxserviceyaml'. This sequential execution ensures each steady state is independently verified within the 20-second timeframe."
+    },
+    "workflow_name": "chaos-experiment-20241124-123730",
+    "workflow": {
+        "path": "sandbox/cycle_20241124_123316/experiment/workflow.yaml",
+        "content": "apiVersion: chaos-mesh.org/v1alpha1\nkind: Workflow\nmetadata:\n  name: chaos-experiment-20241124-123730\nspec:\n  entry: the-entry\n  templates:\n    #-------------------------------\n    # entry point of whole workflow\n    #-------------------------------\n    - name: the-entry\n      templateType: Serial\n      deadline: 30m33s\n      children:\n        - pre-validation-phase\n        - fault-injection-phase\n        - post-validation-phase\n\n    #-------------------------------------\n    # Entry point of pre-validation-phase\n    #-------------------------------------\n    - name: pre-validation-phase\n      templateType: Serial\n      deadline: 10m5s\n      children:\n        - pre-validation-parallel-workflows\n    \n    - name: pre-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m5s\n      children:\n        - pre-unittest-podrunningstatusnginxpodyaml\n        - pre-unittest-serviceavailabilitynginxserviceyaml\n\n    # Definitions of children of pre-validation-phase\n    - name: pre-unittest-podrunningstatusnginxpodyaml\n      templateType: Task\n      deadline: 5m5s\n      task:\n        container:\n          name: pre-unittest-podrunningstatusnginxpodyaml-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py --duration 5\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: pre-unittest-serviceavailabilitynginxserviceyaml\n      templateType: Task\n      deadline: 5m5s\n      task:\n        container:\n          name: pre-unittest-serviceavailabilitynginxserviceyaml-container\n          image: grafana/k6:latest\n          command: [\"k6\", \"run\", \"--duration\", \"5s\", \"--quiet\", \"/chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js\"]    \n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n    \n    #--------------------------------------\n    # Entry point of fault-injection-phase\n    #--------------------------------------\n    - name: fault-injection-phase\n      templateType: Serial\n      deadline: 10m20s\n      children:\n        - fault-injection-overlapped-workflows\n\n    - name: fault-injection-parallel-workflow\n      templateType: Parallel\n      deadline: 5m10s\n      children:\n        - fault-unittest-podrunningstatusnginxpodyaml\n        - fault-podchaos\n\n    - name: fault-injection-suspend-workflow\n      templateType: Serial\n      deadline: 5m20s\n      children:\n        - fault-injection-suspend\n        - fault-injection-parallel-workflows\n\n    - name: fault-injection-suspend\n      templateType: Suspend\n      deadline: 10s\n\n    - name: fault-injection-parallel-workflows\n      templateType: Parallel\n      deadline: 5m10s\n      children:\n        - fault-unittest-serviceavailabilitynginxserviceyaml\n        - fault-networkchaos\n\n    - name: fault-injection-overlapped-workflows\n      templateType: Parallel\n      deadline: 5m20s\n      children:\n        - fault-injection-parallel-workflow\n        - fault-injection-suspend-workflow\n\n    # Definitions of children of pre-validation-phase\n    # unit tests\n    - name: fault-unittest-podrunningstatusnginxpodyaml\n      templateType: Task\n      deadline: 5m10s\n      task:\n        container:\n          name: fault-unittest-podrunningstatusnginxpodyaml-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py --duration 10\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: fault-unittest-serviceavailabilitynginxserviceyaml\n      templateType: Task\n      deadline: 5m10s\n      task:\n        container:\n          name: fault-unittest-serviceavailabilitynginxserviceyaml-container\n          image: grafana/k6:latest\n          command: [\"k6\", \"run\", \"--duration\", \"10s\", \"--quiet\", \"/chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js\"]    \n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    # fault_injections\n    - name: fault-podchaos\n      templateType: PodChaos\n      deadline: 10s\n      podChaos:\n        action: pod-kill\n        mode: one\n        selector:\n          labelSelectors:\n            app: example\n          namespaces:\n            - default\n\n\n    - name: fault-networkchaos\n      templateType: NetworkChaos\n      deadline: 10s\n      networkChaos:\n        action: partition\n        direction: both\n        mode: one\n        selector:\n          labelSelectors:\n            app: example\n          namespaces:\n            - default\n\n    \n    #--------------------------------------\n    # Entry point of post-validation phase\n    #--------------------------------------\n    - name: post-validation-phase\n      templateType: Serial\n      deadline: 10m8s\n      children:\n        - post-validation-parallel-workflows\n\n    - name: post-validation-parallel-workflows\n      templateType: Parallel\n      deadline: 5m8s\n      children:\n        - post-unittest-podrunningstatusnginxpodyaml\n        - post-unittest-serviceavailabilitynginxserviceyaml\n\n    # Definitions of children of pre-validation-phase\n    - name: post-unittest-podrunningstatusnginxpodyaml\n      templateType: Task\n      deadline: 5m8s\n      task:\n        container:\n          name: post-unittest-podrunningstatusnginxpodyaml-container\n          image: chaos-eater/k8sapi:1.0\n          imagePullPolicy: IfNotPresent\n          command: [\"/bin/bash\", \"-c\"]\n          args: [\"python /chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_PodRunningStatusNginxPodYaml_mod0.py --duration 8\"]\n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc\n\n    - name: post-unittest-serviceavailabilitynginxserviceyaml\n      templateType: Task\n      deadline: 5m8s\n      task:\n        container:\n          name: post-unittest-serviceavailabilitynginxserviceyaml-container\n          image: grafana/k6:latest\n          command: [\"k6\", \"run\", \"--duration\", \"8s\", \"--quiet\", \"/chaos-eater/sandbox/cycle_20241124_123316/hypothesis/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js\"]    \n          volumeMounts:\n            - name: pvc-volume\n              mountPath: /chaos-eater\n        volumes:\n          - name: pvc-volume\n            persistentVolumeClaim:\n              claimName: pvc",
+        "work_dir": "sandbox/cycle_20241124_123316/experiment",
+        "fname": "workflow.yaml"
+    }
+}

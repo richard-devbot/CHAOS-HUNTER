@@ -1,0 +1,20 @@
+FROM python:3.10.13
+
+RUN echo "Building docker image"
+
+# set environment variables
+# ENV HF_HOME=/workspace/app/download/llms
+WORKDIR /app
+COPY requirements.txt .
+
+RUN apt-get -y update && \
+    apt-get install -y \
+    curl \
+    git \
+    zip \
+    vim \
+    tmux \
+    redis
+
+# install packages
+RUN pip install --no-cache-dir -r requirements.txt

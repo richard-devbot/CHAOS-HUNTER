@@ -1,0 +1,33 @@
+- name: pre-unittest-podrunningstatusnginxpodyaml
+  templateType: Task
+  deadline: 5m5s
+  task:
+    container:
+      name: pre-unittest-podrunningstatusnginxpodyaml-container
+      image: chaos-eater/k8sapi:1.0
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-c"]
+      args: ["python /chaos-eater/sandbox/cycle_20241124_123316/unittest_PodRunningStatusNginxPodYaml_mod0.py --duration 5"]
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc
+
+- name: pre-unittest-serviceavailabilitynginxserviceyaml
+  templateType: Task
+  deadline: 5m5s
+  task:
+    container:
+      name: pre-unittest-serviceavailabilitynginxserviceyaml-container
+      image: grafana/k6:latest
+      command: ["k6", "run", "--duration", "5s", "--quiet", "/chaos-eater/sandbox/cycle_20241124_123316/unittest_ServiceAvailabilityNginxServiceYaml_mod0.js"]    
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /chaos-eater
+    volumes:
+      - name: pvc-volume
+        persistentVolumeClaim:
+          claimName: pvc

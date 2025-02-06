@@ -1,0 +1,7 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: {{ fault_type }}
+metadata:
+  name: chaos-test
+  namespace: chaos-eater
+spec:
+  {% macro someop() %}{{ specs }}{% endmacro %}{{ someop() | indent(2)}}
