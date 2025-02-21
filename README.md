@@ -83,40 +83,40 @@ Install dependency tools in local using [create_environment.sh](./create_environ
 ```
 ./create_environment.sh
 ```
-### 2. Create kind clusters
-Create kind cluster using [create_kind_cluster.sh](./create_kind_cluster.sh). You may change the cluster name with the the ```-n,--name <your-favorite-name>``` option.
+### 2. Create a kind cluster and the ChaosEater container
+Create a kind cluster and the ChaosEater container using [create_kind_cluster.sh](./create_kind_cluster.sh). You may change the cluster name and the port number of the ChaosEater app with the the ```-n,--name <your-favorite-name>``` and ```-p,--port <port>``` options, respectively.
 ```
-./create_kind_cluster.sh
+./create_kind_cluster.sh -n chaos-eater-cluster -p <port>
 ```
 
-### 3. Launch the ChoasEater GUI
-Build a docker image for ChaosEater using [Dockerfile_llm](./docker/Dockerfile_llm).
+### 3. Launch the ChoasEater app
+You should now be able to find the ChaosEater container running on your machine.
+Check it by the following command.
 ```
-docker build -f docker/Dockerfile_llm -t chaos-eater/chaos-eater:1.0 .
+docker ps
 ```
-Then, run the docker container in interactive mode.
+The return should be like:
 ```
-docker run -it --rm \
-           -v .:/app/ \
-           -v ~/.kube/config:/root/.kube/config \
-           -v $(which kubectl):/usr/local/bin/kubectl \
-           -v $(which skaffold):/usr/local/bin/skaffold \
-           -v ~/.krew/bin/kubectl-graph:/root/.krew/bin/kubectl-graph \
-           -e PATH="/root/.krew/bin:$PATH" \
-           --name chaos-eater \
-           --network host \
-           chaos-eater/chaos-eater:1.0 bash
+CONTAINER ID   IMAGE                         COMMAND                  CREATED      STATUS      PORTS                       NAMES
+3a7044477faf   chaos-eater/chaos-eater:1.0   "bash -c 'redis-serv…"   2 days ago   Up 2 days                               chaos-eater
+64b315ace43c   kindest/node:v1.30.0          "/usr/local/bin/entr…"   2 days ago   Up 2 days   127.0.0.1:41641->6443/tcp   chaos-eater-cluster-control-plane
 ```
-In the continer, set each API key (```Anthropic```, ```Gemini```, and ```OpenAI``` are supported) and launch the streamlit app of ChaosEater. You may change the server port of the app with the ```--server.port <port>``` option.
+If there are no problems, enter the ChaosEater's container.
+```
+docker exec -it chaos-eater bash
+```
+Within the continer, set each API key (```Anthropic```, ```Gemini```, and ```OpenAI``` are supported) and launch the streamlit app of ChaosEater with the appropriate port number.
 ```
 export ANTHROPIC_API_KEY=<your anthropic api key>
-export GOOGLE_API_KEYHow to use the GUI=<your gemini api key>
+export GOOGLE_API_KEY=<your gemini api key>
 export OPENAI_API_KEY=<your openai api key>
 ```
 ```
-streamlit run ChaosEater_demo.py --server.fileWatcherType none
+streamlit run ChaosEater_demo.py --server.fileWatcherType none --server.port <port>
 ```
-Access ```localhost:<port>``` in your browser. Now, you can try the ChaosEater GUI in your browser!  
+
+### 4. Access the ChaosEater WebGUI
+Access ```localhost:<port>``` in your browser. Now, you can try the ChaosEater GUI in your browser!
 If you are working on a remote server, don't forget to set up fort forwarding, e.g., ```ssh <remote-server> -L <port>:localhost:<port>```.  
 </details>
 
