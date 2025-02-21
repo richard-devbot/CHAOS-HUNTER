@@ -467,7 +467,9 @@ def run_command(
 
         # Check for errors
         if process.returncode != 0:
-            error_output = process.stderr.read().decode('utf-8')
+            error_output = process.stderr.read()
+            if isinstance(error_output, bytes):
+                error_output = error_output.decode('utf-8')
             display_handler.on_error(error_output)
             raise subprocess.CalledProcessError(process.returncode, cmd, error_output)
         
