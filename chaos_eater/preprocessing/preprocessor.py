@@ -114,7 +114,7 @@ class PreProcessor:
         skaffold_dict = yaml.safe_load(skaffold_content)
         if kustomize_paths := self.get_kustomize_paths(skaffold_dict):
             kustomize_paths = [f"{skaffold_root_dir}/{kustomize_path}" for kustomize_path in kustomize_paths]
-            files, k8s_yamls = self.process_kustomize_paths(input, kustomize_paths, preprocess_dir)
+            files, k8s_yamls = self.process_kustomize_paths(input, input.skaffold_yaml.work_dir, kustomize_paths, preprocess_dir)
         elif raw_yaml_paths := self.get_raw_yaml_paths(skaffold_dict):
             raw_yaml_paths = [f"{skaffold_root_dir}/{raw_yaml_path}" for raw_yaml_path in raw_yaml_paths]
             files, k8s_yamls = self.process_raw_yaml_paths(input, raw_yaml_paths, preprocess_dir)
@@ -255,12 +255,13 @@ class PreProcessor:
     def process_kustomize_paths(
         self,
         input: ChaosEaterInput,
+        skaffold_workdir: str,
         kustomize_paths: List[str],
         work_dir: str
     ) -> Tuple[List[File], List[File]]:
         files = []
         k8s_yamls = []
-        kustomize_yaml_paths = self.get_kustomize_yaml_paths(kustomize_paths)
+        kustomize_yaml_paths = self.get_kustomize_yaml_paths(skaffold_workdir, kustomize_paths)
         # save files
         for file in input.files:
             path = f"{work_dir}/{file.fname}"
@@ -280,21 +281,26 @@ class PreProcessor:
         k8s_yamls.sort(key=lambda x: x.fname or '')
         return files, k8s_yamls
 
-    def get_kustomize_yaml_paths(self, kustomization_paths: List[str]) -> List[str]:
+    def get_kustomize_yaml_paths(
+        self, 
+        skaffold_workdir: str,
+        kustomization_paths: List[str]
+    ) -> List[str]:
+        kustomization_paths = [f"{skaffold_workdir}/{kustomization_path}" for kustomization_path in kustomization_paths]
         for kustomization_path in kustomization_paths:
             if not os.path.exists(kustomization_path):
                 print(f"Skipping: {kustomization_path} (File not found)")
                 continue
             # Get the list of resources
-            with open(kustomization_path, "r", encoding="utf-8") as f:
+            with open(f"{kustomization_path}/kustomization.yaml", "r", encoding="utf-8") as f:
                 kustomization = yaml.safe_load(f)
             resources = kustomization.get("resources", [])
-            base_dir = os.path.dirname(kustomization_path)
+            base_dir = kustomization_path
             kustomize_yaml_paths = []
             for resource in resources:
                 resource_path = os.path.join(base_dir, resource)
                 if os.path.exists(resource_path):
-                    kustomize_yaml_paths.append(resource_path)
+                    kustomize_yaml_paths.append(resource_path.removeprefix(f"{skaffold_workdir}/"))
                 else:
                     print(f"Warning: {resource_path} not found")
         return kustomize_yaml_paths
