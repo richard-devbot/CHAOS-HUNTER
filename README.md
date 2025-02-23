@@ -25,9 +25,9 @@ In the following, we assume that Docker has been already installed on your machi
 FYI: Docker installation guide (official): https://docs.docker.com/engine/install/ubuntu/
 
 We provide two options for building the ChaosEater app.
-The option A containerizes both K8s (kind) clusters and the ChaosEater app. 
+```Option A``` containerizes both K8s (kind) clusters and the ChaosEater app. 
 This allows you to easily try out ChaosEater without modifying the host environment, but please use it only in a security-safe environment.
-In the option B, K8s (kind) clusters and the ChaosEater app's Docker container are built directly on the host.
+In ```Option B```, K8s (kind) clusters and the ChaosEater app's Docker container are built directly on the host.
 
 <details>
 <summary>
@@ -146,13 +146,39 @@ The currently supported LLMs are GPT-4o (```openai/gpt-4o-2024-08-06```, ```open
 </summary>
 
 Currently available clusters are listed in the ```Cluster selection``` dropdown button.
-You may change the working kind cluster here.
+When there are multiple kind clusters, you may change the working kind cluster from here.
 While the GUI browser is open, the selected cluster will be occupied, and other users will not see the same cluster in the dropdown button.
+
+If you check ```Clean the cluster before/after run```, all resources in the selected cluster, excect for ChaosEater's, will be removed before/after running every single CE cycle.
+
+If you check ```New deployment```, the input K8s system will be deployed in the preprocessing phase. If it is already deployed, you may uncheck it to skip the deployment.
+
 </details>
 
 <details>
 <summary>
-(c) Input examples
+(c) Parameter setting
+</summary>
+
+You can control the parameters of the LLM agents for ChaosEater.  
+```Seed for LLMs``` sets the random seed for the LLMs (this is only effective when using OpenAI models that supports seed setting, such as GPT-4o).  
+```Temperature for LLMs``` sets the temperature of the LLMs.  
+```Max. number of steady states``` sets the maximum number of steady states proposed during the hypothesis phase.  
+```Max retries``` sets the maximum number of iterations for the verification loop and improvement loop. If the loop exceeds this limit, an assertion error will occur, immediately terminating the app at that point.
+
+</details>
+
+<details>
+<summary>
+(d) Token usage
+</summary>
+
+You can monitor token usage in real-time. The total cost is calculated based on the official pricing tables as of September 2024.  
+</details>
+
+<details>
+<summary>
+(e) Input examples
 </summary>
 
 We prepare three types of input examples.
@@ -162,7 +188,7 @@ Click the ```Try this one``` button for the example you wanna try, and a CE cycl
 
 <details>
 <summary>
-(d) Input box
+(f) Input box
 </summary>
 
 You can try your custom system by inputting its data to the input box.
