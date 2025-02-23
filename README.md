@@ -24,10 +24,12 @@
 In the following, we assume that Docker has been already installed on your machine.  
 FYI: Docker installation guide (official): https://docs.docker.com/engine/install/ubuntu/
 
-We provide two options for building the ChaosEater app.
+We offer two options for building the ChaosEater app.
 ```Option A``` containerizes both K8s (kind) clusters and the ChaosEater app. 
 This allows you to easily try out ChaosEater without modifying the host environment, but please use it only in a security-safe environment.
 In ```Option B```, K8s (kind) clusters and the ChaosEater app's Docker container are built directly on the host.
+
+For developers who want to edit the codebase and check the app's behavior, we also offer a development mode ```Option A-dev```.
 
 <details>
 <summary>
@@ -35,8 +37,7 @@ In ```Option B```, K8s (kind) clusters and the ChaosEater app's Docker container
 </summary>
 
 Here, we describe how to containerize both K8s (kind) clusters and the ChaosEater app. 
-If you want to check the app's behavior while modifying the codebase, try the developement mode.
-See its [document](./docs/development.md) for more details.
+If you want to check the app's behavior while modifying the codebase, try ```Opiton A-dev: Developement mode```.
 
 > **⚠️WARNING**    
 > This option uses privileged mode, so it should only be used on your local machine or a securely isolated cloud environment.
@@ -54,7 +55,13 @@ docker build -f docker/Dockerfile_sandbox -t chaos-eater/kind-in-dind-sandbox:0.
 
 ### 2. Launch the container
 ```
-docker run --rm --name chaos-eater --privileged -d -p <port>:<port> -p 2333:2333 chaos-eater/kind-in-dind-sandbox:0.1
+docker run --rm \
+           --name chaos-eater \
+           --privileged \
+           -d \
+           -p <port>:<port> \
+           -p 2333:2333 \
+           chaos-eater/kind-in-dind-sandbox:0.1
 docker exec -it chaos-eater bash -c "
     /usr/local/bin/entrypoint.sh -p <port> \
                                  --openai-key <your-openai-api-key> \
@@ -66,6 +73,82 @@ docker exec -it chaos-eater bash -c "
 Access ```localhost:<port>``` in your browser. Now, you can try the ChaosEater GUI in your browser!  
 If you are working on a remote server, don't forget to set up port forwarding, e.g., ```ssh <remote-server-name> -L <port>:localhost:<port>```.
 </details>
+
+
+<details>
+<summary>
+  Option A-dev: Development mode 🌟Recomended for developers🌟
+</summary>
+
+In ```Option A```, the application codebase is copied to the Docker image when building it. Then, the application is launched based on the copied codebase when running the container.
+In other words, the application codebase is fixed to its state at the time of the Docker image build.
+
+On the other hand, you may want to modify the codebase interactively while verifying its behavior.
+To achieve this, you should mount a Docker volume to your working directory on the host, and manually launch the Streamlit app within the ChaosEater's container running in dind. 
+The following section describes the process step by step.
+
+### 0. Clone this repository (same as ```Option A```)
+Clone this repository and move there.
+```
+git clone https://github.com/ntt-dkiku/chaos-eater.git && cd chaos-eater 
+```
+
+### 1. Build the sandbox image (same as ```Option A```)
+```
+docker build -f docker/Dockerfile_sandbox -t chaos-eater/kind-in-dind-sandbox:0.1 .
+```
+
+### 2. Launch the dind container in development mode
+```
+docker run --rm \
+           --name chaos-eater-dev \
+           --privileged \
+           -d \
+           -p <port>:<port> \
+           -p 2333:2333 \
+           -v <path-to-this-repo>:/workspace \
+           chaos-eater/kind-in-dind-sandbox:0.1
+docker exec -it chaos-eater-dev bash -c "
+    /usr/local/bin/entrypoint.sh --develop \
+                                 --openai-key <your-openai-api-key> \
+                                 --anthropic-key <your-anthropic-api-key> \
+                                 --google-key <your-gemini-api-key>"
+```
+
+### 3. Enter the ChaosEater's container running in dind
+Enter the dind container.
+```
+docker exec -it chaos-eater-dev bash
+```
+You are now within the dind container and should be able to find the ChaosEater's container.
+Check it by the following command.
+```
+docker ps
+```
+The return should be like:
+```
+CONTAINER ID   IMAGE                         COMMAND                  CREATED      STATUS      PORTS                       NAMES
+3a7044477faf   chaos-eater/chaos-eater:1.0   "bash -c 'redis-serv…"   2 days ago   Up 2 days                               chaos-eater
+64b315ace43c   kindest/node:v1.30.0          "/usr/local/bin/entr…"   2 days ago   Up 2 days   127.0.0.1:41641->6443/tcp   chaos-eater-cluster-control-plane
+```
+If there are no problems, enter the ChaosEater's container.
+```
+docker exec -it chaos-eater bash
+``` 
+
+### 4. Launch the streamlit app manually
+Within the ChaosEater's container, move to the mounted working directory.
+```
+cd /workspace
+```
+Launch the streamlit app by yourself.
+```
+streamlit run ChaosEater_demo.py --server.port <port> --server.fileWatcherType none
+```
+Now, you can modify the codebase interactively while verifying its behavior.
+Every time you modify the codebase on the host, you need to stop the Streamlit app using ```Ctrl + C``` and relaunch it to apply the changes.
+</details>
+
 
 <details>
 <summary>
@@ -161,7 +244,7 @@ If you check ```New deployment```, the input K8s system will be deployed in the 
 </summary>
 
 You can control the parameters of the LLM agents for ChaosEater.  
-```Seed for LLMs``` sets the random seed for the LLMs (this is only effective when using OpenAI models that supports seed setting, such as GPT-4o).  
+```Seed for LLMs``` sets the random seed for the LLMs (this is only effective when using OpenAI models that support seed setting, such as GPT-4o).  
 ```Temperature for LLMs``` sets the temperature of the LLMs.  
 ```Max. number of steady states``` sets the maximum number of steady states proposed during the hypothesis phase.  
 ```Max retries``` sets the maximum number of iterations for the verification loop and improvement loop. If the loop exceeds this limit, an assertion error will occur, immediately terminating the app at that point.
