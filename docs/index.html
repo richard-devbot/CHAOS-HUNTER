@@ -497,11 +497,94 @@
                 box-sizing: border-box;
                 margin: 0 auto;
             }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .developer {
+                font-size: 0.9rem;
+            }
+
+            .tab {
+                font-size: 16px;
+                padding: 0.4rem 0.8rem;
+            }
+
+            .tab-content {
+                font-size: 16px;
+                padding: 0.8rem 1.5em;
+            }
+
+            .content {
+                font-size: 16px;
+                padding: 0.8rem 1.5em;
+            }
+
+            .code-container {
+                font-size: 16px;
+                padding: 15px;
+            }
+
+            pre {
+                font-size: 15px;
+                padding: 12px;
+            }
+
+            .icon-button {
+                font-size: 14px;
+                padding: 0.4rem 0.8rem;
+            }
+
+            .icon-button svg {
+                width: 20px;
+                height: 20px;
+                margin-right: 5px;
+            }
+
+            .menu-content ul li a {
+                font-size: 16px;
+            }
+
+            .section {
+                font-size: 28px;
+            }
+
+            .copy-button {
+                top: 70px;
+                right: 20px;
+                font-size: 14px;
+                padding: 4px 8px;
+            }
+            p {
+                text-align: justify;
+                hyphens: auto;
+                text-justify: inter-word;
+            }
+            .hyphen-align {
+                text-align: justify;
+                hyphens: auto;
+                text-justify: inter-word;
+            }
+            .copy-message {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            .small-image {
+                max-width: 100%;
+            }
         }
-        
+
         @media (min-width: 640px) {
             h1 {
                 font-size: 2.5rem;
+            }
+            .small-image {
+                max-width: 80%;
             }
         }
     </style>
@@ -627,11 +710,10 @@
             To reduce the costs of these manual operations, we propose <span style="font-variant: small-caps;">ChaosEater</span>, a system for automating the entire CE cycle with Large Language Models (LLMs).
           </p>
           <br>
-          <img src="static/images/ce_cycle.png" style="width: 80%; height: auto;" class="center-image">
+          <img src="static/images/ce_cycle.png" style="height: auto;" class="center-image small-image">
           <div style="text-align: center;">
             <div style="display: inline-block; text-align: left;">
                 Figure 1: The systematic CE cycle. Existing tools partially automate the experiment and analysis, 
-                <br>
                 whereas hypothesis and improvement remain manual. <span style="font-variant: small-caps;">ChaosEater</span> automates all of them.
             </div>
           </div> 
@@ -646,7 +728,7 @@
                 Its three key features to achieve fully automated CE are as follows:
             </p>
             <div class="underline"><h2>1. Infrastructure as Code x LLMs for Software Engineering</h2></div>
-            <div>
+            <div class="hyphen-align">
                 In modern software systems, the entire system configuration can be managed as code through <a href="https://en.wikipedia.org/wiki/Infrastructure_as_code" class="custom-link" target="_blank">Infrastructure as Code</a> (IaC).
                 Additionally, existing CE tools enable the code-based management of failure injection.
                 Therefore, CE for software systems is considered as one of the Software Engineering (SE) tasks.
@@ -657,7 +739,7 @@
             <br>
 
             <div class="underline"><h2>2. Agentic Workflow for Chaos Engineering</h2></div>
-            <div>
+            <div class="hyphen-align">
                 Agentic Workflows, which define task flows (transitions) among multiple LLM agents, have been actively designed in various fields.
                 Similarly, we design a novel agentic workflow for CE according to the systematic CE cycle (Figure 2).
                 When a user's K8s system is provided as input, the workflow allows each LLM agent to autonomously perform hypothesis formulation, chaos experiments using Chaos Mesh, result analysis, and system reconfiguration. 
@@ -666,7 +748,7 @@
             </div>
             <br>
             <div class="underline"><h2>3. New components: VaC, Interfaces between LLMs and CE tools</h2></div>
-            <div>
+            <div class="hyphen-align">
                 We propose not only the novel workflow and instruction prompts for LLM agents but also component technologies essential for full CE automation, 
                 such as unit test-based hypothesis validation and integration with existing CE tools.
                 For the former, we introduce a novel concept called Validation as Code (VaC). 
@@ -679,7 +761,6 @@
             <div style="text-align: center;">
                 <div style="display: inline-block; text-align: left;">
                     Figure 2: The agentic workflow of <span style="font-variant: small-caps;">ChaosEater</span> and its input and output.
-                    <br>
                     The internal agents autonomously complete the systematic CE cycle using CE tools.
                 </div>
             </div>
