@@ -8,6 +8,9 @@ on:
       - "docs/index.html"
       - "docs/static/**"
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
