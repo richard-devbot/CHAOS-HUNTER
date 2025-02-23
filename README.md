@@ -36,6 +36,8 @@ For developers who want to edit the codebase and check the app's behavior, we al
   Option A: kind-in-dind sandbox 🌟Recomended for local users🌟
 </summary>
 
+<br>
+
 Here, we describe how to containerize both K8s (kind) clusters and the ChaosEater app. 
 If you want to check the app's behavior while modifying the codebase, try ```Opiton A-dev: Developement mode```.
 
@@ -79,6 +81,8 @@ If you are working on a remote server, don't forget to set up port forwarding, e
 <summary>
   Option A-dev: Development mode 🌟Recomended for developers🌟
 </summary>
+
+<br>
 
 In ```Option A```, the application codebase is copied to the Docker image when building it. Then, the application is launched based on the copied codebase when running the container.
 In other words, the application codebase is fixed to its state at the time of the Docker image build.
@@ -154,6 +158,8 @@ Every time you modify the codebase on the host, you need to stop the Streamlit a
 <summary>
   Option B: Standard kind cluster
 </summary>
+
+<br>
 
 Here, we describe how to build K8s (kind) clusters and the ChaosEater app's Docker container on the host.
 ### 0. Clone this repository
