@@ -4,6 +4,8 @@ RUN echo "Building docker image"
 
 # set environment variables
 # ENV HF_HOME=/workspace/app/download/llms
+ENV DOCKER_CLIENT_VERSION=27.5.1
+ENV DOCKER_API_VERSION=1.47
 WORKDIR /app
 COPY requirements.txt .
 
@@ -15,6 +17,10 @@ RUN apt-get -y update && \
     vim \
     tmux \
     redis
+
+# install docker client
+RUN curl -fsSL https://get.docker.com | VERSION=${DOCKER_CLIENT_VERSION} sh && \
+    ln -s /usr/bin/docker /usr/local/bin/docker
 
 # install packages
 RUN pip install --no-cache-dir -r requirements.txt

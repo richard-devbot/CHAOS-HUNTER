@@ -99,9 +99,9 @@ PORT_FORWARD_PID=$!
 echo "Chaos Mesh dashboard is being port-forwarded at http://localhost:2333 in the background."
 echo "To stop the port-forward process, use: kill ${PORT_FORWARD_PID}"
 
-#-------------------
-# launch ChaosEater
-#-------------------
+#-------------------------------
+# launch ChaosEater's container
+#-------------------------------
 if [ "${DEVELOP}" = "True" ]; then
     docker run --rm \
         -v .:/app/ \
@@ -109,11 +109,12 @@ if [ "${DEVELOP}" = "True" ]; then
         -v $(which kubectl):/usr/local/bin/kubectl \
         -v $(which skaffold):/usr/local/bin/skaffold \
         -v ~/.krew/bin/kubectl-graph:/root/.krew/bin/kubectl-graph \
+        -v /workspace:/workspace \
+        -v /var/run/docker.sock:/var/run/docker.sock \
         -e PATH="/root/.krew/bin:$PATH" \
         -e OPENAI_API_KEY="${OPENAI_API_KEY}" \
         -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
         -e GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
-        -v /workspace:/workspace \
         -d \
         --name chaos-eater \
         --network host \
@@ -126,6 +127,7 @@ else
         -v $(which kubectl):/usr/local/bin/kubectl \
         -v $(which skaffold):/usr/local/bin/skaffold \
         -v ~/.krew/bin/kubectl-graph:/root/.krew/bin/kubectl-graph \
+        -v /var/run/docker.sock:/var/run/docker.sock \
         -e PATH="/root/.krew/bin:$PATH" \
         -e OPENAI_API_KEY="${OPENAI_API_KEY}" \
         -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
