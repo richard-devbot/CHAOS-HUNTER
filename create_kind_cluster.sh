@@ -108,6 +108,7 @@ if [ "${DEVELOP}" = "True" ]; then
         -v ~/.kube/config:/root/.kube/config \
         -v $(which kubectl):/usr/local/bin/kubectl \
         -v $(which skaffold):/usr/local/bin/skaffold \
+        -v $(which kind):/usr/local/bin/kind \
         -v ~/.krew/bin/kubectl-graph:/root/.krew/bin/kubectl-graph \
         -v /workspace:/workspace \
         -v /var/run/docker.sock:/var/run/docker.sock \
@@ -126,6 +127,7 @@ else
         -v ~/.kube/config:/root/.kube/config \
         -v $(which kubectl):/usr/local/bin/kubectl \
         -v $(which skaffold):/usr/local/bin/skaffold \
+        -v $(which kind):/usr/local/bin/kind \
         -v ~/.krew/bin/kubectl-graph:/root/.krew/bin/kubectl-graph \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -e PATH="/root/.krew/bin:$PATH" \
