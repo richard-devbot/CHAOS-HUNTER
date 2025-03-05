@@ -1,4 +1,4 @@
-SOFTWARE LICENSE AGREEMENT FOR EVALUATION
+# SOFTWARE LICENSE AGREEMENT FOR EVALUATION
 
 This SOFTWARE LICENSE AGREEMENT FOR EVALUATION (this "Agreement") is a legal contract between a person
 who uses or otherwise accesses or installs the Software (“User(s)”), and Nippon Telegraph and Telephone corporation ("NTT").
@@ -14,13 +14,12 @@ TERMINATE THE INSTALLATION PROCESS, IMMEDIATELY CEASE AND REFRAIN FROM ACCESSING
 USING THE SOFTWARE AND DELETE ANY COPIES USER MAY HAVE. THIS AGREEMENT REPRESENTS THE 
 ENTIRE AGREEMENT BETWEEN USER AND NTT CONCERNING THE SOFTWARE.
 
-
-BACKGROUND
+## BACKGROUND  
 A. NTT is the owner of all rights, including all patent rights, copyrights and trade secret rights, in and to the Software 
    and related documentation except OSS listed in Exhibit A to this Agreement.
 
 B. User wishes to obtain a royalty free license to use the Software to enable User to evaluate, and NTT wishes to grant such 
-   a license to User, pursuant and subject to the terms and conditions of this Agreement.
+   a license to User, pursuant and subject tgit o the terms and conditions of this Agreement.
 
 C. As a condition to NTT's provision of the Software to User, NTT has required User to execute this Agreement.
 
@@ -45,7 +44,7 @@ In consideration of these premises, and the mutual promises and conditions in th
    this Agreement for any reason, User agrees to uninstall the Software and either return to NTT the Software and all copies
    thereof, or to destroy all such materials and provide written verification of such destruction to NTT.
 
-4. Proprietary Rights
+4. Proprietary Rights  
    (a) The Software is the valuable, confidential, and proprietary property of NTT, and NTT shall retain exclusive title to 
        this property both during the term and after the termination of this Agreement.  Without limitation, User 
        acknowledges that all patent rights, copyrights and trade secret rights in the Software except OSS shall remain 
@@ -93,7 +92,7 @@ In consideration of these premises, and the mutual promises and conditions in th
 9. OSS. The OSS included in the software is shown on the "OSS List" in Exhibit A. 
    User shall be subject to the license term of each OSS, when User uses the software.
 
-10. General
+10. General  
     (d)	If any provision, or part of a provision, of this Agreement is or becomes illegal, unenforceable, or invalidated, by 
         operation of law or otherwise, that provision or part shall to that extent be deemed omitted, and the remainder of
         this Agreement shall remain in full force and effect.
@@ -119,15 +118,12 @@ In consideration of these premises, and the mutual promises and conditions in th
     (f)	NTT shall not be liable to the User or to any third party for any delay or failure to perform NTT's obligation set 
         forth under this Agreement due to any cause beyond NTT's reasonable control.
 
-EXHIBIT A
-- Software
+## EXHIBIT A
+- Software  
   N/A
 
-- OSS List
-  +----+------------+-----------------+-----------------------------------------------------------+--------------------------------------------+
-  | No | License    | OSS             | URL                                                       | Path                                       |
-  +----+------------+-----------------+-----------------------------------------------------------+--------------------------------------------+
-  | 01 | Apache-2.0 | Sock Shop       | https://github.com/microservices-demo/microservices-demo  | examples/sock-shop/, examples/sock-shop-2/ |
-  +----+------------+-----------------+-----------------------------------------------------------+--------------------------------------------+
-  | 02 | Apache-2.0 | Online Boutique | https://github.com/GoogleCloudPlatform/microservices-demo | examples/online-boutique/                  |
-  +----+------------+-----------------+-----------------------------------------------------------+--------------------------------------------+
+- OSS List  
+  | No | License    | OSS | Path |  
+  |--- | ---        | --- | ---  |
+  | 01 | Apache-2.0 | [Sock Shop](https://github.com/microservices-demo/microservices-demo) | [examples/sock-shop/](./examples/sock-shop), [examples/sock-shop-2/](./examples/sock-shop) |  
+  | 02 | Apache-2.0 | [Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) | [examples/online-boutique/](./examples/oneline-boutique/) |
