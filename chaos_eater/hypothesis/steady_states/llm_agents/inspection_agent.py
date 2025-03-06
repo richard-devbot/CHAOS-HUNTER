@@ -197,7 +197,7 @@ class InspectionAgent:
         display_container.create_subsubcontainer(subcontainer_id="inspection", subsubcontainer_id=f"inspection_description{mod_count}")
         display_container.create_subsubcontainer(subcontainer_id="inspection", subsubcontainer_id=f"inspection_script{mod_count}")
         for cmd in agent.stream({
-            "user_input": input_data.to_k8s_overview_str,
+            "user_input": input_data.to_k8s_overview_str(),
             "ce_instructions": input_data.ce_instructions,
             "steady_state_name": steady_state_draft["name"],
             "steady_state_thought": steady_state_draft["thought"]},
