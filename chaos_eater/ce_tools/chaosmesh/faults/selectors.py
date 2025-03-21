@@ -1,5 +1,5 @@
 from typing import List, Dict, Literal, Optional
-from langchain_core.pydantic_v1 import BaseModel, Field, root_validator
+from pydantic.v1 import BaseModel, Field
 
 
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
