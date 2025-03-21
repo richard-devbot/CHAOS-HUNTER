@@ -20,13 +20,13 @@ def evaluate(
     # load results
     #--------------
     # find results
-    pattern = os.path.join(result_dir, "result*")
+    pattern = os.path.join(result_dir, "gpt-4o*")
     result_paths = glob.glob(pattern)
     result_paths.sort()
     # add results to test
     results = []
     for path in result_paths:
-        results.append(ChaosEaterOutput(**load_json(path)))
+        results.append(ChaosEaterOutput(**load_json(f"{path}/outputs/output.json")))
 
     #-------------------------
     # load llm and reviewer
@@ -35,15 +35,15 @@ def evaluate(
         model_name=model_name, 
         temperature=temperature,
         port=port,
-        model_kwargs={"seed": seed}
+        seed=seed
     )
     reviewer = Reviewer(llm)
 
     #------------
     # evaluation
     #------------
+    model_name_ = model_name.split('/')[-1]
     if uses_cache:
-        model_name_ = model_name.split('/')[-1]
         pattern_ = re.compile(rf'review\d+_{re.escape(model_name_)}\.json')
         offset = 0
         for file_name in os.listdir(result_dir):
