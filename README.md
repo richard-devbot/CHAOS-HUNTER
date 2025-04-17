@@ -394,7 +394,7 @@ If you find this work useful, please cite our paper as follows:
 ```
 @misc{dkiku2025chaoseater,
     title={ChaosEater: Fully Automating Chaos Engineering with Large Language Models}, 
-    author={Daisuke Kikuta and Hiroki Ikeuchi and Kengo Tajiri and Yuusuke Nakano},
+    author={Daisuke Kikuta and Hiroki Ikeuchi and Kengo Tajiri},
     year={2025},
     eprint={2501.11107},
     archivePrefix={arXiv},
