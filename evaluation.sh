@@ -18,7 +18,7 @@ num_k8s_manifests=2 # (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 #                            --num_k8s_manifests "${num_k8s_manifests}" \
 
 #------------------------------------
-# evaluate ChaosEater on the dataset
+# evaluate ChaosHunter on the dataset
 #------------------------------------
 # for model in "${models[@]}"
 # do
@@ -33,7 +33,7 @@ num_k8s_manifests=2 # (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 # done
 
 #--------------------------------------------------------
-# review the ChaosEater outputs by LLMs (LLM-as-a-judge)
+# review the ChaosHunter outputs by LLMs (LLM-as-a-judge)
 #--------------------------------------------------------
 for reviewer in "${reviewers[@]}"
 do

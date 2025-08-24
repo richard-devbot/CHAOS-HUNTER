@@ -1,8 +1,8 @@
 from typing import List
 
-from chaos_eater.utils.llms import load_llm
-from chaos_eater.utils.functions import get_timestamp
-from chaos_eater.data_generation.data_generator import DataGenerator
+from chaos_hunter.utils.llms import load_llm
+from chaos_hunter.utils.functions import get_timestamp
+from chaos_hunter.data_generation.data_generator import DataGenerator
 
 
 def generate_dataset(
@@ -22,7 +22,7 @@ def generate_dataset(
         model_name=model_name, 
         temperature=temperature,
         port=port,
-        model_kwargs={"seed": seed}
+        seed=seed
     )
     generator = DataGenerator(llm)
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--output_dir", default=f"datasets/dataset_{get_timestamp()}", type=str, help="The path to the dataset")
-    parser.add_argument("--model_name", default="openai/gpt-4o-2024-08-06", type=str, choices=["openai/gpt-4o-2024-08-06", "openai/gpt-4o-2024-05-13", "google/gemini-1.5-pro", "anthropic/claude-3-5-sonnet-20240620", "meta-llama/Meta-Llama-3-70B-Instruct"], help="Model name of an LLM")
+    parser.add_argument("--model_name", default="google/gemini-2.5-pro", type=str, choices=["openai/gpt-4o-2024-08-06", "openai/gpt-4o-2024-05-13", "google/gemini-2.5-pro", "google/gemini-2.5-flash", "anthropic/claude-3-5-sonnet-20240620"], help="Model name of an LLM")
     parser.add_argument("--temperature", default=0.0, type=float, help="Temperature of the LLM")
     parser.add_argument("--seed", default=42, type=int, help="Seed number of the LLM")
     parser.add_argument("--port", default=8000, type=int, help="Port number of the vLLM server")

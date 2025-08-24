@@ -2,10 +2,10 @@ import os
 import re
 import glob
 
-from chaos_eater.utils.llms import load_llm
-from chaos_eater.utils.functions import save_json, load_json
-from chaos_eater.chaos_eater import ChaosEaterOutput
-from chaos_eater.reviewing.reviwer import Reviewer
+from chaos_hunter.utils.llms import load_llm
+from chaos_hunter.utils.functions import save_json, load_json
+from chaos_hunter.chaos_hunter import ChaosHunterOutput
+from chaos_hunter.reviewing.reviwer import Reviewer
 
 
 def evaluate_cecycle_by_llms(
@@ -20,7 +20,7 @@ def evaluate_cecycle_by_llms(
     #-----------------
     # load the result
     #-----------------
-    result = ChaosEaterOutput(**load_json(f"{result_dir}/outputs/output.json"))
+    result = ChaosHunterOutput(**load_json(f"{result_dir}/outputs/output.json"))
 
     #-------------------------
     # load llm and reviewer

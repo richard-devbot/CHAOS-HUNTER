@@ -4,18 +4,18 @@ import json
 import streamlit as st
 from streamlit_extras.bottom_container import bottom
 
-from ChaosEater_demo import WORK_DIR, NAMESPACE, CHAOSEATER_ICON, CHAOSEATER_IMAGAE
-from chaos_eater.utils.app_utils import (
+from ChaosHunter_demo import WORK_DIR, NAMESPACE, CHAOSHUNTER_ICON, CHAOSHUNTER_IMAGAE
+from chaos_hunter.utils.app_utils import (
     apply_hide_st_style,
     apply_hide_height0_components,
     apply_centerize_components_vertically,
     apply_remove_sidebar_topspace,
-    add_chaoseater_icon,
+    add_chashunter_icon,
     apply_remove_example_bottomspace
 )
-from chaos_eater.ce_tools.ce_tool import CEToolType, CETool
-from chaos_eater.utils.llms import load_llm
-from chaos_eater.utils.functions import (
+from chaos_hunter.ce_tools.ce_tool import CEToolType, CETool
+from chaos_hunter.utils.llms import load_llm
+from chaos_hunter.utils.functions import (
     remove_files_in,
     remove_all_resources_in,
     remove_all,
@@ -23,10 +23,10 @@ from chaos_eater.utils.functions import (
     load_json,
     get_timestamp
 )
-from chaos_eater.preprocessing.preprocessor import ProcessedData
-from chaos_eater.hypothesis.llm_agents.steady_states.steady_state_agent import SteadyStateAgent, SteadyStates
-from chaos_eater.hypothesis.llm_agents.faults.fault_agent import FaultAgent
-from chaos_eater.hypothesis.hypothesizer import Hypothesis
+from chaos_hunter.preprocessing.preprocessor import ProcessedData
+from chaos_hunter.hypothesis.llm_agents.steady_states.steady_state_agent import SteadyStateAgent, SteadyStates
+from chaos_hunter.hypothesis.llm_agents.faults.fault_agent import FaultAgent
+from chaos_hunter.hypothesis.hypothesizer import Hypothesis
 
 
 def init_agent(
@@ -79,7 +79,7 @@ def main():
     #--------------
     st.set_page_config(
         page_title="Hypohesis demo",
-        page_icon=CHAOSEATER_IMAGAE,
+        page_icon=CHAOSHUNTER_IMAGAE,
     )
     # st.set_page_config(layout="wide")
     apply_hide_st_style()
@@ -90,7 +90,7 @@ def main():
     #---------
     # sidebar
     #---------
-    st.logo("static/chaoseater_icon.png")
+    st.logo("static/chashunter_icon.png")
     with st.sidebar:
         # settings
         with st.expander("Settings", expanded=True):
@@ -148,7 +148,7 @@ def main():
 
     # greeding 
     if len(st.session_state.chat_history) == 0 and st.session_state.is_first_run:
-        add_chaoseater_icon()
+        add_chashunter_icon()
         greeding = "Here is a demo space for the Hypothesis Phase. You can start from the Hypothesis pahse by inputting result files (JSON format) so far."
         if st.session_state.count == 0: # streaming
             elem = st.empty()
@@ -233,7 +233,7 @@ def main():
                 if st.session_state.steady_states_tmp is not None:
                     st.session_state.steady_states = st.session_state.experiment_plan_tmp
                 if st.session_state.processed_data_tmp is None and st.session_state.steady_states_tmp is None:
-                    st.chat_message("assistant", avatar=CHAOSEATER_ICON).write("Please input intermediate result data!")
+                    st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please input intermediate result data!")
             st.text("")
 
     #--------------
@@ -241,7 +241,7 @@ def main():
     #--------------
     if st.session_state.processed_data is not None:
         if st.session_state.steady_states is None and subphase_type == "Failure definition":
-            st.chat_message("assistant", avatar=CHAOSEATER_ICON).write("Please input steady state data when subphase is 'Failure definition'.")
+            st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please input steady state data when subphase is 'Failure definition'.")
         else:
             if st.session_state.is_first_run:
                 st.session_state.is_first_run = False
@@ -252,7 +252,7 @@ def main():
                 if subphase_type == "Failure definition":
                     st.write("### Steady States (dict):")
                     st.write(st.session_state.steady_states.dict())
-            with st.chat_message("assistant", avatar=CHAOSEATER_ICON):
+            with st.chat_message("assistant", avatar=CHAOSHUNTER_ICON):
                 steady_states = st.session_state.steady_states
                 processed_data = st.session_state.processed_data
                 st.session_state.processed_data = None

@@ -2,12 +2,12 @@ import os
 import re
 import glob
 
-from chaos_eater.utils.llms import load_llm
-from chaos_eater.utils.functions import get_timestamp, load_jsonl, save_jsonl, save_json, load_json, remove_all_resources_in
-from chaos_eater.utils.k8s import remove_all_resources_by_labels
-from chaos_eater.utils.schemas import File
-from chaos_eater.chaos_eater import ChaosEater, ChaosEaterInput, ChaosEaterOutput
-from chaos_eater.ce_tools.ce_tool import CEToolType, CETool
+from chaos_hunter.utils.llms import load_llm
+from chaos_hunter.utils.functions import get_timestamp, load_jsonl, save_jsonl, save_json, load_json, remove_all_resources_in
+from chaos_hunter.utils.k8s import remove_all_resources_by_labels
+from chaos_hunter.utils.schemas import File
+from chaos_hunter.chaos_hunter import ChaosHunter, ChaosHunterInput, ChaosHunterOutput
+from chaos_hunter.ce_tools.ce_tool import CEToolType, CETool
 
 
 def is_binary(file_content) -> str:
@@ -75,7 +75,7 @@ def evaluate(
 
             dataset.append((
                 suffix,
-                ChaosEaterInput(
+                ChaosHunterInput(
                     skaffold_yaml=skaffold_yaml,
                     files=project_files,
                     ce_instructions=f"The Chaos-Engineering experiment must be completed within {experiment_time_limit} minute(s)."
@@ -85,25 +85,25 @@ def evaluate(
         save_jsonl(converted_dataset_path, dataset)
 
     #-------------------------
-    # load llm and ChaosEater 
+    # load llm and ChaosHunter 
     #-------------------------
     llm = load_llm(
         model_name=model_name, 
         temperature=temperature,
         port=port,
-        model_kwargs={"seed": seed}
+        seed=seed
     )
-    chaoseater = ChaosEater(
+    chashunter = ChaosHunter(
         llm=llm,
         ce_tool=CETool.init(CEToolType.chaosmesh),
         work_dir="sandbox",
-        namespace="chaos-eater"
+        namespace="chaos-hunter"
     )
 
     #------------
     # evaluation
     #------------
-    project_name = "chaos-eater"
+    project_name = "chaos-hunter"
     os.makedirs(output_dir, exist_ok=True)
     for suffix, data in dataset:
         save_path = f"{output_dir}/result{suffix}.json"
@@ -115,13 +115,13 @@ def evaluate(
         
         print(f"Evaluating sample{suffix} in {dataset_dir}")
         # clean resources
-        remove_all_resources_in("chaos-eater")
+        remove_all_resources_in("chaos-hunter")
         remove_all_resources_by_labels(label_selector=f"project={project_name}")
-        # run ChaosEater
-        input = ChaosEaterInput(**data)
+        # run ChaosHunter
+        input = ChaosHunterInput(**data)
         work_dir = f"{output_dir}/output{suffix}"
         try:
-            output = chaoseater.run_ce_cycle(
+            output = chashunter.run_ce_cycle(
                 input=input,
                 work_dir=work_dir,
                 project_name=project_name,
@@ -132,9 +132,9 @@ def evaluate(
             print(f"CE cycle failed: {e}")
             ce_output_path = f"{work_dir}/outputs/output.json"
             if os.path.exists(ce_output_path):
-                ce_output = ChaosEaterOutput(**load_json(ce_output_path))
+                ce_output = ChaosHunterOutput(**load_json(ce_output_path))
             else:
-                ce_output = ChaosEaterOutput()
+                ce_output = ChaosHunterOutput()
             save_json(save_path, ce_output.dict())
 
 

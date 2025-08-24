@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
 
-from chaos_eater.utils.llms import TokenCounterCallback
+from chaos_hunter.utils.llms import TokenCounterCallback
 
 
 def print_tokens(method: str, token_counter: Dict[str, int]) -> None:

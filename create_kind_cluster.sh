@@ -3,7 +3,7 @@
 #------------------
 # default settings
 #------------------
-CLUSTER_NAME="chaos-eater-cluster"
+CLUSTER_NAME="chaos-hunter-cluster"
 PORT=8080
 OPENAI_API_KEY=""
 ANTHROPIC_API_KEY=""
@@ -50,14 +50,14 @@ fi
 # Switch to the created cluster's context
 kubectl config use-context kind-${CLUSTER_NAME}
 
-# Create namespace "chaos-eater"
-kubectl create namespace chaos-eater
+# Create namespace "chaos-hunter"
+kubectl create namespace chaos-hunter
 
 # Deploy pv/pvc
 kubectl apply -f k8s/pv.yaml
 kubectl apply -f k8s/pvc.yaml
 
-# Grant superuser authorization to the "default" service account in the "chaos-eater" namespace
+# Grant superuser authorization to the "default" service account in the "chaos-hunter" namespace
 kubectl apply -f k8s/super_user_role_binding.yaml
 
 # Enable `kubectl top` by deploying the metrics-server
@@ -66,11 +66,11 @@ kubectl apply -n kube-system -f https://github.com/kubernetes-sigs/metrics-serve
 #-----------------------------
 # Build & load a docker image
 #-----------------------------
-# build and load the docker image for k8s api pod used by ChaosEater
-docker build -t chaos-eater/k8sapi:1.0 -f docker/Dockerfile_k8sapi .
-kind load docker-image chaos-eater/k8sapi:1.0 --name ${CLUSTER_NAME}
+# build and load the docker image for k8s api pod used by ChaosHunter
+docker build -t chaos-hunter/k8sapi:1.0 -f docker/Dockerfile_k8sapi .
+kind load docker-image chaos-hunter/k8sapi:1.0 --name ${CLUSTER_NAME}
 # docker image for 
-docker build -f docker/Dockerfile_llm -t chaos-eater/chaos-eater:1.0 .
+docker build -f docker/Dockerfile_llm -t chaos-hunter/chaos-hunter:1.0 .
 
 #------------
 # Chaos Mesh
@@ -100,7 +100,7 @@ echo "Chaos Mesh dashboard is being port-forwarded at http://localhost:2333 in t
 echo "To stop the port-forward process, use: kill ${PORT_FORWARD_PID}"
 
 #-------------------------------
-# launch ChaosEater's container
+# launch ChaosHunter's container
 #-------------------------------
 if [ "${DEVELOP}" = "True" ]; then
     docker run --rm \
@@ -117,9 +117,9 @@ if [ "${DEVELOP}" = "True" ]; then
         -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
         -e GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
         -d \
-        --name chaos-eater \
+        --name chaos-hunter \
         --network host \
-        chaos-eater/chaos-eater:1.0 \
+        chaos-hunter/chaos-hunter:1.0 \
         bash -c "redis-server --daemonize yes && tail -f /dev/null"
 else
     docker run --rm \
@@ -135,10 +135,10 @@ else
         -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
         -e GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
         -d \
-        --name chaos-eater \
+        --name chaos-hunter \
         --network host \
-        chaos-eater/chaos-eater:1.0 \
-        bash -c "redis-server --daemonize yes; streamlit run ChaosEater_demo.py --server.port ${PORT} --server.fileWatcherType none"
+        chaos-hunter/chaos-hunter:1.0 \
+        bash -c "redis-server --daemonize yes; streamlit run ChaosHunter_demo.py --server.port ${PORT} --server.fileWatcherType none"
 fi
 
 #----------

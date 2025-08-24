@@ -1,8 +1,8 @@
 import os
-from chaos_eater.preprocessing.preprocessor import PreProcessor, ChaosEaterInput
-from chaos_eater.utils.functions import is_binary
-from chaos_eater.utils.schemas import File
-from chaos_eater.utils.llms import load_llm
+from chaos_hunter.preprocessing.preprocessor import PreProcessor, ChaosHunterInput
+from chaos_hunter.utils.functions import is_binary
+from chaos_hunter.utils.schemas import File
+from chaos_hunter.utils.llms import load_llm
 
 
 def test_kustomize_input() -> None:
@@ -39,7 +39,7 @@ def test_kustomize_input() -> None:
                             work_dir=EXAMPLE_DIR,
                             fname=fpath.removeprefix(f"{EXAMPLE_DIR}/")
                     ))
-    input = ChaosEaterInput(
+    input = ChaosHunterInput(
         skaffold_yaml=skaffold_yaml,
         files=project_files_tmp,
         ce_instructions=instructions
@@ -56,7 +56,7 @@ def test_kustomize_input() -> None:
     preprocesser = PreProcessor(llm)
     preprocess_logs, data = preprocesser.process(
         input=input,
-        kube_context="kind-chaos-eater-cluster",
+        kube_context="kind-chaos-hunter-cluster",
         work_dir="sandbox/kustomize_test",
         project_name="kustomize-test",
         is_new_deployment=True
