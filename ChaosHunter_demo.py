@@ -29,6 +29,11 @@ WORK_DIR  = "sandbox"
 NAMESPACE = "chaos-hunter"
 EXAMPLE_DIR = "./examples"
 
+# Ensure we're in the correct working directory
+import os
+if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 
 REQUEST_URL_INSTRUCTIONS = """
 - When using k6 in steady-state definition, always select a request URL from the following options (other requests are invalid):
