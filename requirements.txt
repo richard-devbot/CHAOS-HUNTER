@@ -1,6 +1,6 @@
 # LLM
-langchain==0.3.7
-langchain-core==0.3.15
+langchain==0.3.27
+langchain-core==0.3.74
 langchain-openai==0.2.6
 langchain-google-genai==2.0.4
 langchain-anthropic==0.2.4
@@ -11,9 +11,9 @@ tiktoken==0.7.0
 # AWS
 boto3>=1.34.0
 botocore>=1.34.0
-# vllm # is currently on hold because some errors occur when constructing ChaosHunter's container on Mac OS 
 
 # GUI
+
 streamlit==1.36.0
 streamlit-extras==0.4.3
 
@@ -31,70 +31,4 @@ scipy
 tqdm
 pydot
 redis
-pydantic==2.10.6 # langchain currently does not support pydantic>=2.11
-
-
-
-# $env:GOOGLE_API_KEY="AIzaSyDCzrl0SUX6Iy2hFl7YcBIkueLQI4vcVts"; docker run --rm --name chaos-hunter-dev --privileged -d -p 8080:8080 -p 2333:2333 --mount type=bind,source="E:\Appdata\program files\python\projects\chaos-hunter",target=/workspace chaos-hunter/kind-in-dind-sandbox:0.1; docker exec -it chaos-hunter-dev bash -lc "until docker info >/dev/null 2>&1; do sleep 1; done; /usr/local/bin/entrypoint.sh --develop -p 8080 --google-key $env:GOOGLE_API_KEY"
-
-
-# # Enter the sandbox (outer dind container)
-# docker exec -it chaos-hunter-dev bash
-
-# # Inside the sandbox, enter the inner app container
-# docker ps
-# docker exec -it chaos-hunter bash
-
-# # Inside the inner app container, start the GUI
-# cd /workspace
-# streamlit run ChaosHunter_demo.py --server.port 8080 --server.fileWatcherType none
-
-
-# python generate_dataset.py -o datasets/test_run --model_name google/gemini-2.5-pro --num_samples 1 --num_k8s_manifests_list 1 2 --restart
-
-# python evaluate_quantitative_metrics.py --dataset_dir "datasets\test_run" --output_dir "results\gpt-4o_$(Get-Date -Format yyyyMMdd_HHmmss)" --model_name google/gemini-1.5-pro --experiment_time_limit 1 --uses_dataset_cache
-
-# # Point to a single CE run folder that contains outputs\output.json
-# python evaluate_quality_by_reviewer.py --result_dir "results\gpt-4o_YYYYMMDD_HHMMSS\outputX" --model_name google/gemini-1.5-pro --num_review_samples 3 --uses_cache
-
-
-
-# You're absolutely right! The --rm flag is what's causing the container to be automatically removed when it stops. Let's fix this so your container persists.
-# 1. First, let's create a persistent container (without --rm):
-
-# $env:GOOGLE_API_KEY="AIzaSyDCzrl0SUX6Iy2hFl7YcBIkueLQI4vcVts"; docker run --name chaos-hunter-dev --privileged -d -p 8080:8080 -p 2333:2333 --mount type=bind,source="E:\Appdata\program files\python\projects\chaos-hunter",target=/workspace chaos-hunter/kind-in-dind-sandbox:0.1
-
-# 2. Then execute the entrypoint:
-
-# docker exec -it chaos-hunter-dev bash -lc "until docker info >/dev/null 2>&1; do sleep 1; done; /usr/local/bin/entrypoint.sh --develop -p 8080 --google-key $env:GOOGLE_API_KEY"
-
-# 3. Now for future use, you can just:
-# Start the container: docker start chaos-hunter-dev
-# Stop the container: docker stop chaos-hunter-dev
-# Access the running container: docker exec -it chaos-hunter-dev bash
-# 4. If you need to restart Streamlit inside the container:
-
-# docker exec -it chaos-hunter-dev bash -c "streamlit run ChaosHunter_demo.py --server.port 8080"
-
-# This way, your container will persist and you won't need to rebuild the image again! The volume mount will still pick up any code changes you make.
-
-
-# erfect! The container exists but it's probably stopped. Let's check and start it:
-# 1. Check the container status:
-
-# docker ps -a
-
-# 2. Start the existing container:
-
-# docker start chaos-hunter-dev
-
-# 3. Then execute the entrypoint script:
-
-# docker exec -it chaos-hunter-dev bash -lc "until docker info >/dev/null 2>&1; do sleep 1; done; /usr/local/bin/entrypoint.sh --develop -p 8080 --google-key $env:GOOGLE_API_KEY"
-
-# This is exactly what you wanted! The container exists and persists, so you don't need to rebuild anything. Just start it and run the entrypoint script.
-# If for some reason the container is corrupted, you can remove it and create a new one:
-
-# docker rm chaos-hunter-dev
-
-# But try starting the existing one first - it should work perfectly!
+pydantic>=2.10.6
