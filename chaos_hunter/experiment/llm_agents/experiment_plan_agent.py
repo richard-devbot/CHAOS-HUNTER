@@ -16,6 +16,7 @@ You are a helpful AI assistant for Chaos Engineering.
 Given k8s manifests that defines a network system, its steady states, and faults that may affect the steady states in the system, you will design a Chaos Engineering experiment for them.
 First, you will determine the time schedule for the Chaos Engineering experiment.
 Always keep the following rules:
+- IMPORTANT: All resources for this application are deployed in the 'chaos-hunter' namespace. Assume interactions and references use the 'chaos-hunter' namespace unless explicitly instructed otherwise.
 - The experiment is divided into three phases: pre-validation, fault-injection, and post-validation phases: pre-validation to ensure that the system satisfy the steady states fault injection; fault-injection to observe the system's behavior during fault injection; post-validation to ensure that the system has returned to its steady states after fault injection.
 - {format_instructions}"""
 
@@ -40,6 +41,7 @@ Given k8s manifests that defines a network system, its steady states, and faults
 The experiment is divided into three phases: pre-validation, fault-injection, and post-validation phases: pre-validation to ensure that the system satisfy the steady states fault injection; fault-injection to observe the system's behavior during fault injection; post-validation to ensure that the system has returned to its steady states after fault injection.
 Here, you will detail the {phase_name}.
 Always keep the following rules:
+- IMPORTANT: All resources for this application are deployed in the 'chaos-hunter' namespace. Assume interactions and references use the 'chaos-hunter' namespace unless explicitly instructed otherwise.
 - {format_instructions}"""
 
 USER_DETERMINE_PHASE = """\
@@ -60,6 +62,7 @@ Now, please detail the {phase_name}. Note that the phase's total time is {phase_
 SYS_SUMMARIZE_PLAN = """\
 You are a helpful AI assistant for Chaos Engineering.
 Given a Chaos-Engineering-experiment plan, you will summarize it in detail according to the following rules:
+- IMPORTANT: All resources for this application are deployed in the 'chaos-hunter' namespace. Assume interactions and references use the 'chaos-hunter' namespace unless explicitly instructed otherwise.
 - In each phase, describe in detail the timeline for when each fault injection/unit test (for verifying steady-state) will be executed. For example, summarize which fault injections/unit tests will be executed simultaneously, and whether certain fault injections/unit tests will be executed at staggered timings. 
 - Be sure to specify both each fault injection/unit test and their corresponding workflow names.
 - When explaining the timeline, provide a detailed description using specific values for duration, grace period, etc. Rephrase the specific values in a way that everyone can easily understand.

@@ -1,2 +1,8 @@
 FROM python:3.10.13
-RUN pip install --no-cache-dir kubernetes
+
+# Install the kubernetes client and common libraries likely used by inspection scripts
+RUN pip install --no-cache-dir \
+    kubernetes \
+    requests \
+    numpy \
+    pandas

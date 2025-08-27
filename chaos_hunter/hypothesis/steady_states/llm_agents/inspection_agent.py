@@ -24,6 +24,7 @@ Always keep the following rules:
 - Use the K8s API for checking the current state of K8s resources
 - Use k6 for checking communication statuses/metrics, such as request sending, response time, latency, etc.
 - If you use K8s API, consider appropriate test duration. If you use k6, consider not only appropriate test duration but also an appropriate number of virtual users in the load test.
+- IMPORTANT: All resources for this application are deployed in the 'chaos-hunter' namespace. Your script MUST interact with resources in the 'chaos-hunter' namespace unless explicitly instructed otherwise.
 - Pay attention to namespace specification. If the namespace is specified in the manifest, it is deployed with the namespace. If not, it is deployed with the 'default' namespace.
 - When sending requests to a K8s resources, use their internal DNS names in the format: ```service-name.namespace.svc.cluster.local:port```. For the port setting, use the service port, not the targetPort or nodePort. Ensure that the port matches the service port defined in the manifest.
 - If other request formats are provided by the user, follow the user's format.
@@ -196,6 +197,12 @@ class InspectionAgent:
         #------------------------------
         display_container.create_subsubcontainer(subcontainer_id="inspection", subsubcontainer_id=f"inspection_description{mod_count}")
         display_container.create_subsubcontainer(subcontainer_id="inspection", subsubcontainer_id=f"inspection_script{mod_count}")
+        cmd = {}
+        thought = None
+        tool_type = None
+        code = None
+        duration = None
+        fname = None
         for cmd in agent.stream({
             "user_input": input_data.to_k8s_overview_str(),
             "ce_instructions": input_data.ce_instructions,
@@ -203,17 +210,22 @@ class InspectionAgent:
             "steady_state_thought": steady_state_draft["thought"]},
             {"callbacks": [self.logger]}
         ):
-            if (thought := cmd.get("thought")) is not None:
+            if (t := cmd.get("thought")) is not None:
+                thought = t
                 display_container.update_subsubcontainer(thought, f"inspection_description{mod_count}")
             if (tool := cmd.get("tool")) is not None:
-                if (tool_type := cmd.get("tool_type")) is not None:
+                tt = cmd.get("tool_type")
+                if tt is not None:
+                    tool_type = tt
                     if tool_type == "k8s":
-                        if (code := tool.get("script")) is not None:
+                        c = tool.get("script")
+                        if c is not None:
+                            code = c
                             duration = tool.get("duration")
                             fname = "k8s_" + sanitize_filename(steady_state_draft["name"])
                             fname = f"{fname}_mod{mod_count}.py" if mod_count >= 0 else f"{fname}.py"
                             display_container.update_subsubcontainer(
-                                f"{thought}  \ntool: ```{tool_type}``` duration: ```{duration}```  \nInspection script (Python) ```{fname}```:",
+                                f"{thought or ''}  \ntool: ```{tool_type}``` duration: ```{duration}```  \nInspection script (Python) ```{fname}```:",
                                 f"inspection_description{mod_count}"
                             )
                             display_container.update_subsubcontainer(
@@ -223,13 +235,15 @@ class InspectionAgent:
                                 language="python"
                             )
                     elif tool_type == "k6":
-                        if (code := tool.get("script")) is not None:
+                        c = tool.get("script")
+                        if c is not None:
+                            code = c
                             vus = tool.get("vus")
                             duration = tool.get("duration")
                             fname = "k6_" + sanitize_filename(steady_state_draft["name"])
                             fname = f"{fname}_mod{mod_count}.js" if mod_count >= 0 else f"{fname}.js"
                             display_container.update_subsubcontainer(
-                                f"{thought}  \ntool: ```{tool_type}``` vus: ```{vus}``` duration: ```{duration}```  \nInspection script (Javascript) ```{fname}```:",
+                                f"{thought or ''}  \ntool: ```{tool_type}``` vus: ```{vus}``` duration: ```{duration}```  \nInspection script (Javascript) ```{fname}```:",
                                 f"inspection_description{mod_count}"
                             )
                             display_container.update_subsubcontainer(
@@ -244,6 +258,9 @@ class InspectionAgent:
         #----------
         if tool_type not in ["k8s", "k6"]:
             raise TypeError(f"Invalid tool type selected: {tool_type}. Select either 'k8s' or 'k6'.")
+        # ensure code was produced
+        assert code is not None, "The LLM did not produce an inspection script. Please try again or adjust the prompt."
+        assert fname is not None, "Failed to determine a filename for the inspection script."
         fpath = f"{work_dir}/{fname}"
         write_file(fpath, code)
         return (

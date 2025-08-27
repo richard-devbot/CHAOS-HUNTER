@@ -87,56 +87,25 @@ def run_pod(
     # apply the manifest
     type_cmd(f"kubectl apply -f {yaml_path} --context {kube_context} -n {namespace}")
     
-    # wait for completion using kubectl wait (more robust than manual polling)
-    logs = ""
-    exit_code = -1
-    try:
-        if display_container is not None:
-            display_container.write(f"###### Pod ```{pod_name}``` is running. Waiting for completion...")
-        subprocess.run(
-            [
-                "kubectl", "wait", "--for=condition=complete", f"pod/{pod_name}",
-                "--timeout=300s", "--context", kube_context, "-n", namespace,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        # fetch final status and logs
-        status_json = subprocess.run(
-            [
-                "kubectl", "get", "pod", pod_name, "--context", kube_context, "-n", namespace, "-o", "json"
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
-        pod_data = json.loads(status_json)
-        container_statuses = pod_data.get("status", {}).get("containerStatuses", [])
-        if container_statuses and container_statuses[0].get("state", {}).get("terminated"):
-            exit_code = int(container_statuses[0]["state"]["terminated"]["exitCode"])
-        logs = subprocess.run(
-            ["kubectl", "logs", pod_name, "--context", kube_context, "-n", namespace],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Error during pod execution or log retrieval: {e}")
-        logs = f"Pod did not complete successfully.\nError: {e.stderr}"
+    # wait for completion using phase polling (Pods do not have a 'complete' condition)
+    if wait_for_pod_completion(pod_name, kube_context, namespace, display_container=display_container):
+        time.sleep(1)
+        returncode, console_logs = get_pod_logs(pod_name, kube_context, namespace)
         type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}")
-        assert False, limit_string_length(logs)
-        return -1, limit_string_length(logs)
-    # cleanup and return
-    type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}")
-    return exit_code, limit_string_length(logs)
+        return returncode, limit_string_length(console_logs)
+    else:
+        console_logs = "Pod did not complete successfully."
+        print("Pod did not complete successfully.")
+        type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}")
+        assert False, console_logs
+        return -1, console_logs
 
 def wait_for_pod_completion(
     pod_name: str,
     kube_context: str,
     namespace: str = "chaos-hunter",
-    timeout: float = 300.,
-    interval: int = 1,
+    timeout: float = 120.,  # Reduced to 2 minutes for 60-second scripts
+    interval: int = 2,      # Check every 2 seconds
     display_container = None
 ) -> bool:
     start_time = time.time()
@@ -150,7 +119,14 @@ def wait_for_pod_completion(
             )
             pod_data = json.loads(result.stdout)
             phase = pod_data["status"]["phase"]
-            if phase == "Succeeded":
+            # Check if container has terminated (for long-running scripts)
+            container_statuses = pod_data.get("status", {}).get("containerStatuses", [])
+            if container_statuses and container_statuses[0].get("state", {}).get("terminated"):
+                if display_container is not None:
+                    display_container.write(f"###### Pod ```{pod_name}``` has completed.  \nThe inspection script's results (current states) are as follows:")
+                print(f"Pod {pod_name} has completed.\nThe script's results are as follows:")
+                return True
+            elif phase == "Succeeded":
                 if display_container is not None:
                     display_container.write(f"###### Pod ```{pod_name}``` has completed sucessfully.  \nThe inspection script's results (current states) are as follows:")
                 print(f"Pod {pod_name} has completed sucessfully.\nThe script's results are as follows:")
@@ -163,7 +139,7 @@ def wait_for_pod_completion(
             else:
                 if display_container is not None:
                     display_container.write(f"###### Pod ```{pod_name}``` is in phase ```{phase}```. Waiting...")
-                print(f"Pod {pod_name} is in phase {phase}. Waiting...")
+                print(f"Pod {pod_name} is in phase {phase}. Waiting... (elapsed: {int(time.time() - start_time)}s)")
         except subprocess.CalledProcessError as e:
             print(f"Error checking Pod status: {e}")
             return False
