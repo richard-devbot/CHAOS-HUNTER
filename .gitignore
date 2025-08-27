@@ -178,7 +178,7 @@ errors.txt
 .dockerignore
 
 # Kubernetes
-k8s/
+# k8s/
 
 # Temporary files
 *.tmp

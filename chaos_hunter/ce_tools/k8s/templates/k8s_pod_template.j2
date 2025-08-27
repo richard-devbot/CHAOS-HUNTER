@@ -1,0 +1,31 @@
+# --- START OF FINAL, CORRECTED k8s_pod_template.j2 ---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ pod_name }}
+spec:
+  containers:
+  - name: {{ pod_name }}-container
+    image: chaos-hunter/k8sapi:1.0
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/bash", "-c"] # Use -c to execute a single command string
+    args:
+      - | # Start of the single multi-line command string
+        set -euo pipefail
+        # Write the python script content passed by the application into a file inside the container
+        cat > /work/script.py <<'PYEOF'
+        {{ script_content }}
+        PYEOF
+        # FIX 1: The execution is now part of the same script, solving the YAML error.
+        # Now, execute the python script that was just created
+        python /work/script.py --duration {{ duration }}
+    # FIX 2: Add the volumeMounts section for the container
+    volumeMounts:
+      - name: pvc-volume
+        mountPath: /work # Mount the shared volume at /work
+  restartPolicy: Never
+  # FIX 2: Add the volumes section for the Pod, linking to the PVC
+  volumes:
+    - name: pvc-volume
+      persistentVolumeClaim:
+        claimName: pvc

@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-hunter-admin
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-hunter-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: chaos-hunter
+roleRef:
+  kind: ClusterRole
+  name: chaos-hunter-admin
+  apiGroup: rbac.authorization.k8s.io
+
