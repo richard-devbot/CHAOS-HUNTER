@@ -1,6 +1,6 @@
 # LLM
-langchain==0.3.74
-langchain-core==0.3.20
+langchain==0.3.20
+langchain-core==0.3.74
 langchain-openai==0.2.10
 langchain-google-genai==2.0.6
 langchain-anthropic==0.3.18
