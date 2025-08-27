@@ -387,7 +387,11 @@ def main():
     #---------
     # sidebar
     #---------
-    st.logo(CHAOSHUNTER_LOGO_PATH)
+    # Only show logo if the image file exists
+    if os.path.exists(CHAOSHUNTER_LOGO_PATH):
+        st.logo(CHAOSHUNTER_LOGO_PATH)
+    else:
+        st.title("ChaosHunter")
     dark = st.toggle("Dark mode", value=False)
     app_utils.apply_dark_mode(dark)
     with st.sidebar:
@@ -411,6 +415,7 @@ def main():
             base_models = [
                 "openai/gpt-4o-2024-08-06",
                 "google/gemini-2.5-pro",
+                "google/gemini-2.0-flash-lite",
                 "anthropic/claude-3-5-sonnet-20241022",
             ]
             
@@ -546,12 +551,20 @@ def main():
                 avail_cluster_list,
                 key="cluster_name"
             )
+            if cluster_name == FULL_CAP_MSG:
+                st.info("No free clusters detected. Check Redis key 'cluster_usage' and kubectl contexts. See terminal logs for details.")
+                st.button(
+                    "Release my cluster reservation",
+                    key="release_cluster_reservation",
+                    on_click=app_utils.release_my_reserved_cluster
+                )
             app_utils.monitor_session(st.session_state.session_id)
             st.button(
                 "Clean the cluster",
                 key="clean_k8s",
                 on_click=remove_all_resources_by_namespace,
-                args=(cluster_name, NAMESPACE, )
+                args=(cluster_name, NAMESPACE, ),
+                disabled=(cluster_name == FULL_CAP_MSG)
             )
 
             #--------------------
@@ -864,7 +877,7 @@ def main():
                 if len(avail_cluster_list) > 0 and avail_cluster_list[0] != FULL_CAP_MSG:
                     r = redis.Redis(host='localhost', port=6379, db=0)
                     r.hset("cluster_usage", st.session_state.session_id, cluster_name)
-                with st.chat_message("assistant", avatar=CHAOSHUNTER_ICON):
+                with st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖"):
                     output = st.session_state.chashunter.run_ce_cycle(
                         input=input,
                         work_dir=f"{WORK_DIR}/cycle_{get_timestamp()}",
@@ -894,12 +907,12 @@ def main():
                     # st.session_state.chat_history.append(AIMessage(content=response["response"]))
             else:
                 print(st.session_state.k8s_yamls)
-                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please input your k8s mainfests!")
+                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖").write("Please input your k8s mainfests!")
         else:
             if cluster_name == FULL_CAP_MSG:
-                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write(FULL_CAP_MSG)
+                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖").write(FULL_CAP_MSG)
             else:
-                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please set your API key!")
+                st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖").write("Please set your API key!")
                 st.session_state.chat_history.append(HumanMessage(content="test"))
 
     st.session_state.count += 1

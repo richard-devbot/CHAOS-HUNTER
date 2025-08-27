@@ -195,9 +195,14 @@ ADD_CHAOS_HUNTER_ICON = """\
 import base64
 from pathlib import Path
 def add_chashunter_icon(icon_path: str) -> None:
-    img_bytes = Path(icon_path).read_bytes()
-    encoded_img = base64.b64encode(img_bytes).decode()
-    components.html(ADD_CHAOS_HUNTER_ICON.replace("{chashunter_png}", f"{encoded_img}"))
+    try:
+        if Path(icon_path).exists():
+            img_bytes = Path(icon_path).read_bytes()
+            encoded_img = base64.b64encode(img_bytes).decode()
+            components.html(ADD_CHAOS_HUNTER_ICON.replace("{chashunter_png}", f"{encoded_img}"))
+    except Exception:
+        # If the icon can't be loaded, just skip it
+        pass
 
 
 # ref: https://discuss.streamlit.io/t/remove-hide-running-man-animation-on-top-of-page/21773/3
@@ -316,14 +321,63 @@ def monitor_session(session_id: str) -> None:
         return
 
 def get_available_clusters() -> Tuple[str]:
-    # get the cluster list
-    cluster_str = type_cmd("kubectl config get-contexts | awk 'NR>1 {print $2}'", widget=False)
-    cluster_list = tuple(cluster_str.strip().split("\n"))
-    # get the available cluster list
-    r = redis.Redis(host='localhost', port=6379, db=0)
-    cluster_usage = r.hgetall("cluster_usage")
-    used_cluster_list = tuple(v.decode() for v in cluster_usage.values())
-    return tuple(set(cluster_list) - set(used_cluster_list))
+    # Robustly get the cluster list
+    try:
+        # Prefer a shell-agnostic output
+        cluster_str = type_cmd("kubectl config get-contexts -o name", widget=False)
+        if not cluster_str.strip():
+            # Fallback to awk parsing if -o name not supported
+            cluster_str = type_cmd("kubectl config get-contexts | awk 'NR>1 {print $2}'", widget=False)
+    except Exception as e:
+        print(f"[get_available_clusters] Error invoking kubectl: {e}")
+        cluster_str = ""
+
+    raw_lines = [line.strip() for line in cluster_str.split("\n")]
+    # Filter out blanks and obvious headers/noise
+    cluster_list = tuple(line for line in raw_lines if line)
+
+    # Read cluster usage from Redis; if Redis is unavailable, assume none are in use
+    used_cluster_list: Tuple[str]
+    try:
+        r = redis.Redis(host='localhost', port=6379, db=0)
+        cluster_usage = r.hgetall("cluster_usage")
+        my_session_id = getattr(st.session_state, "session_id", None)
+        # Exclude this session's own reservation so the user can still see/use their cluster
+        if my_session_id is not None:
+            used_cluster_list = tuple(
+                v.decode()
+                for k, v in cluster_usage.items()
+                if k.decode() != str(my_session_id)
+            )
+        else:
+            used_cluster_list = tuple(v.decode() for v in cluster_usage.values())
+    except Exception as e:
+        print(f"[get_available_clusters] Redis unavailable or error: {e}. Proceeding with empty usage.")
+        used_cluster_list = tuple()
+
+    available = tuple(sorted(set(cluster_list) - set(used_cluster_list)))
+
+    # Debug output to aid troubleshooting
+    print(f"[get_available_clusters] cluster_str=\n{cluster_str}")
+    print(f"[get_available_clusters] parsed cluster_list={cluster_list}")
+    print(f"[get_available_clusters] used_cluster_list={used_cluster_list}")
+    print(f"[get_available_clusters] available={available}")
+
+    return available
+
+
+def release_my_reserved_cluster() -> None:
+    """Remove this session's cluster reservation from Redis, if present."""
+    try:
+        my_session_id = getattr(st.session_state, "session_id", None)
+        if my_session_id is None:
+            print("[release_my_reserved_cluster] No session_id in session_state; nothing to release.")
+            return
+        r = redis.Redis(host='localhost', port=6379, db=0)
+        r.hdel("cluster_usage", str(my_session_id))
+        print(f"[release_my_reserved_cluster] Released reservation for session {my_session_id}.")
+    except Exception as e:
+        print(f"[release_my_reserved_cluster] Error releasing reservation: {e}")
 
 
 # -----------------------------

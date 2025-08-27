@@ -1,5 +1,6 @@
 import time
 import random
+import re
 from typing import List, Tuple, Callable, Iterator, Optional, Any
 from functools import wraps
 
@@ -16,6 +17,26 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
 
 from .wrappers import LLM, LLMBaseModel, BaseModel
+
+
+def extract_retry_delay(error_str: str) -> Optional[int]:
+    """Extract retry delay from error message using multiple patterns."""
+    if "retry_delay" in error_str:
+        try:
+            # Try multiple patterns to extract retry delay
+            patterns = [
+                r'retry_delay\s*{\s*seconds:\s*(\d+)',
+                r'retry_delay.*?seconds:\s*(\d+)',
+                r'retry_delay.*?(\d+)\s*seconds',
+                r'seconds:\s*(\d+)'
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, error_str, re.IGNORECASE | re.DOTALL)
+                if match:
+                    return int(match.group(1))
+        except:
+            pass
+    return None
 
 
 def retry_with_exponential_backoff(
@@ -54,14 +75,7 @@ def retry_with_exponential_backoff(
                     if "ResourceExhausted" in str(e) and "429" in str(e):
                         is_rate_limit = True
                         # Extract retry delay from error message if available
-                        if "retry_delay" in str(e):
-                            try:
-                                import re
-                                match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', str(e))
-                                if match:
-                                    retry_after = int(match.group(1))
-                            except:
-                                pass
+                        retry_after = extract_retry_delay(str(e))
                     
                     # OpenAI rate limit
                     elif "rate_limit" in str(e).lower() or "429" in str(e):
@@ -151,14 +165,7 @@ def create_retry_llm(llm_class, **kwargs):
                         
                         if "ResourceExhausted" in str(e) and "429" in str(e):
                             is_rate_limit = True
-                            if "retry_delay" in str(e):
-                                try:
-                                    import re
-                                    match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', str(e))
-                                    if match:
-                                        retry_after = int(match.group(1))
-                                except:
-                                    pass
+                            retry_after = extract_retry_delay(str(e))
                         elif "rate_limit" in str(e).lower() or "429" in str(e):
                             is_rate_limit = True
                         
@@ -197,14 +204,7 @@ def create_retry_llm(llm_class, **kwargs):
                         
                         if "ResourceExhausted" in str(e) and "429" in str(e):
                             is_rate_limit = True
-                            if "retry_delay" in str(e):
-                                try:
-                                    import re
-                                    match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', str(e))
-                                    if match:
-                                        retry_after = int(match.group(1))
-                                except:
-                                    pass
+                            retry_after = extract_retry_delay(str(e))
                         elif "rate_limit" in str(e).lower() or "429" in str(e):
                             is_rate_limit = True
                         
@@ -243,9 +243,13 @@ def load_llm(
             request_timeout=30.0
         )
     elif model_name.startswith("google/"):
+        # Normalize optional AI Studio style prefix like "google/models/<id>"
+        google_model_id = model_name.split("google/", 1)[1]
+        if google_model_id.startswith("models/"):
+            google_model_id = google_model_id.split("models/", 1)[1]
         return create_retry_llm(
             ChatGoogleGenerativeAI,
-            model=model_name.split("google/", 1)[1],
+            model=google_model_id,
             temperature=temperature,
             timeout=60.0,  # Set timeout for requests
             max_retries=5,  # Increased retries for stability
@@ -353,14 +357,7 @@ def load_llm(
                             
                             if "ResourceExhausted" in str(e) and "429" in str(e):
                                 is_rate_limit = True
-                                if "retry_delay" in str(e):
-                                    try:
-                                        import re
-                                        match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', str(e))
-                                        if match:
-                                            retry_after = int(match.group(1))
-                                    except:
-                                        pass
+                                retry_after = extract_retry_delay(str(e))
                             elif "rate_limit" in str(e).lower() or "429" in str(e) or "throttling" in str(e).lower():
                                 is_rate_limit = True
                             
@@ -584,6 +581,11 @@ PRICING_PER_TOKEN = {
         "output": 12.50 / UNIT
     },
     "google/gemini-2.5-flash": {
+        "input": 4.50 / UNIT,
+        "output": 11.50 / UNIT
+    },
+    # Approximate pricing: align with gemini-2.5-flash unless adjusted later
+    "google/gemini-2.0-flash-lite": {
         "input": 4.50 / UNIT,
         "output": 11.50 / UNIT
     },

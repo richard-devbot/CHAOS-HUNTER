@@ -79,6 +79,7 @@ def run_pod(
         template_path,
         pod_name=pod_name,
         script_path=script_path,
+        script_content=inspection.script.content if inspection.tool_type == "k8s" else "",
         duration=duration
     )
     yaml_path = f"{work_dir}/{os.path.splitext(inspection.script.fname)[0]}_pod.yaml"
@@ -86,18 +87,49 @@ def run_pod(
     # apply the manifest
     type_cmd(f"kubectl apply -f {yaml_path} --context {kube_context} -n {namespace}")
     
-    # wait until the pod complete
-    if wait_for_pod_completion(pod_name, kube_context, namespace, display_container=display_container):
-        time.sleep(1)
-        returncode, console_logs = get_pod_logs(pod_name, kube_context, namespace)
-        type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}") # delete the pod
-        return returncode, limit_string_length(console_logs)
-    else:
-        console_logs = "Pod did not complete successfully." 
-        print("Pod did not complete successfully.")
-        type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}") # delete the pod
-        assert False, console_logs
-        return -1, console_logs
+    # wait for completion using kubectl wait (more robust than manual polling)
+    logs = ""
+    exit_code = -1
+    try:
+        if display_container is not None:
+            display_container.write(f"###### Pod ```{pod_name}``` is running. Waiting for completion...")
+        subprocess.run(
+            [
+                "kubectl", "wait", "--for=condition=complete", f"pod/{pod_name}",
+                "--timeout=300s", "--context", kube_context, "-n", namespace,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        # fetch final status and logs
+        status_json = subprocess.run(
+            [
+                "kubectl", "get", "pod", pod_name, "--context", kube_context, "-n", namespace, "-o", "json"
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        pod_data = json.loads(status_json)
+        container_statuses = pod_data.get("status", {}).get("containerStatuses", [])
+        if container_statuses and container_statuses[0].get("state", {}).get("terminated"):
+            exit_code = int(container_statuses[0]["state"]["terminated"]["exitCode"])
+        logs = subprocess.run(
+            ["kubectl", "logs", pod_name, "--context", kube_context, "-n", namespace],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Error during pod execution or log retrieval: {e}")
+        logs = f"Pod did not complete successfully.\nError: {e.stderr}"
+        type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}")
+        assert False, limit_string_length(logs)
+        return -1, limit_string_length(logs)
+    # cleanup and return
+    type_cmd(f"kubectl delete pod {pod_name} --context {kube_context} -n {namespace}")
+    return exit_code, limit_string_length(logs)
 
 def wait_for_pod_completion(
     pod_name: str,

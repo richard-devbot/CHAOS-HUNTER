@@ -60,17 +60,26 @@ kubectl apply -f k8s/pvc.yaml
 # Grant superuser authorization to the "default" service account in the "chaos-hunter" namespace
 kubectl apply -f k8s/super_user_role_binding.yaml
 
+# Apply explicit cluster-admin permissions for default SA in chaos-hunter
+kubectl apply -f k8s/admin_permissions.yaml
+
 # Enable `kubectl top` by deploying the metrics-server
 kubectl apply -n kube-system -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
 #-----------------------------
 # Build & load a docker image
 #-----------------------------
-# build and load the docker image for k8s api pod used by ChaosHunter
+# build the docker image for k8s api pod used by ChaosHunter
 docker build -t chaos-hunter/k8sapi:1.0 -f docker/Dockerfile_k8sapi .
-kind load docker-image chaos-hunter/k8sapi:1.0 --name ${CLUSTER_NAME}
-# docker image for 
+
+# build the main application docker image
 docker build -f docker/Dockerfile_llm -t chaos-hunter/chaos-hunter:1.0 .
+
+# NEW, CRITICAL FIX: Load the docker images into the kind cluster nodes
+echo "Loading images into kind cluster..."
+kind load docker-image chaos-hunter/k8sapi:1.0 --name ${CLUSTER_NAME}
+kind load docker-image chaos-hunter/chaos-hunter:1.0 --name ${CLUSTER_NAME}
+echo "Image loading complete."
 
 #------------
 # Chaos Mesh

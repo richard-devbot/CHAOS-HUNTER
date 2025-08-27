@@ -4,7 +4,7 @@ import json
 import streamlit as st
 from streamlit_extras.bottom_container import bottom
 
-from ChaosHunter_demo import WORK_DIR, NAMESPACE, CHAOSHUNTER_ICON, CHAOSHUNTER_IMAGAE
+from ChaosHunter_demo import WORK_DIR, NAMESPACE, CHAOSHUNTER_ICON, CHAOSHUNTER_IMAGE
 from chaos_hunter.utils.app_utils import (
     apply_hide_st_style,
     apply_hide_height0_components,
@@ -79,7 +79,7 @@ def main():
     #--------------
     st.set_page_config(
         page_title="Hypohesis demo",
-        page_icon=CHAOSHUNTER_IMAGAE,
+        page_icon=CHAOSHUNTER_IMAGE,
     )
     # st.set_page_config(layout="wide")
     apply_hide_st_style()
@@ -90,7 +90,12 @@ def main():
     #---------
     # sidebar
     #---------
-    st.logo("static/chashunter_icon.png")
+    # Only show logo if the image file exists
+    logo_path = "static/chashunter_icon.png"
+    if os.path.exists(logo_path):
+        st.logo(logo_path)
+    else:
+        st.title("ChaosHunter")
     with st.sidebar:
         # settings
         with st.expander("Settings", expanded=True):
@@ -233,7 +238,7 @@ def main():
                 if st.session_state.steady_states_tmp is not None:
                     st.session_state.steady_states = st.session_state.experiment_plan_tmp
                 if st.session_state.processed_data_tmp is None and st.session_state.steady_states_tmp is None:
-                    st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please input intermediate result data!")
+                    st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖").write("Please input intermediate result data!")
             st.text("")
 
     #--------------
@@ -241,7 +246,7 @@ def main():
     #--------------
     if st.session_state.processed_data is not None:
         if st.session_state.steady_states is None and subphase_type == "Failure definition":
-            st.chat_message("assistant", avatar=CHAOSHUNTER_ICON).write("Please input steady state data when subphase is 'Failure definition'.")
+                            st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖").write("Please input steady state data when subphase is 'Failure definition'.")
         else:
             if st.session_state.is_first_run:
                 st.session_state.is_first_run = False
@@ -252,7 +257,7 @@ def main():
                 if subphase_type == "Failure definition":
                     st.write("### Steady States (dict):")
                     st.write(st.session_state.steady_states.dict())
-            with st.chat_message("assistant", avatar=CHAOSHUNTER_ICON):
+            with st.chat_message("assistant", avatar=CHAOSHUNTER_ICON if CHAOSHUNTER_ICON is not None else "🤖"):
                 steady_states = st.session_state.steady_states
                 processed_data = st.session_state.processed_data
                 st.session_state.processed_data = None

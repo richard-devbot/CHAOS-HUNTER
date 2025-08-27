@@ -51,6 +51,7 @@ class K8sSummaryAgent:
         for k8s_yaml in k8s_yamls:
             st.write(f"```{k8s_yaml.fname}```")
             container = st.empty()
+            summary_str = ""  # Initialize summary_str variable
             for summary in self.agent.stream(
                 {"k8s_yaml": file_to_str(k8s_yaml)}, 
                 {"callbacks": [self.logger]}

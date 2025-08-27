@@ -4,6 +4,9 @@ import numpy as np
 
 # Get the project root directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# If we're in a container environment, adjust the path
+if os.path.exists("/workspace"):
+    PROJECT_ROOT = "/workspace"
 
 SKAFFOLD_YAML_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/data_generation/templates/skaffold_yaml_template.j2")
 UNITTEST_BASE_PY_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools/k8s/unittest_base.py")
@@ -17,18 +20,27 @@ GROUNDCHILDREN_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools
 SUSPEND_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools/chaosmesh/templates/suspend_template.j2")
 
 # Prefer ChaosHunter-branded assets; gracefully fall back to existing ones
-CHAOSHUNTER_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaohunter_logo.png")
-CHAOSHUNTER_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaohunter_icon.png")
+CHAOSHUNTER_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chashunter_logo.png")
+CHAOSHUNTER_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chashunter_icon.png")
 
-_FALLBACK_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaoseater_logo.png")
-_FALLBACK_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaoseater_icon.png")
+_FALLBACK_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chashunter_logo.png")
+_FALLBACK_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chashunter_icon.png")
 
 if not os.path.exists(CHAOSHUNTER_LOGO_PATH):
     CHAOSHUNTER_LOGO_PATH = _FALLBACK_LOGO_PATH
 if not os.path.exists(CHAOSHUNTER_IMAGE_PATH):
     CHAOSHUNTER_IMAGE_PATH = _FALLBACK_IMAGE_PATH
 
-CHAOSHUNTER_IMAGE = Image.open(CHAOSHUNTER_IMAGE_PATH)
-CHAOSHUNTER_ICON = np.array(CHAOSHUNTER_IMAGE)
+# Load image files if they exist, otherwise set to None
+try:
+    if os.path.exists(CHAOSHUNTER_IMAGE_PATH):
+        CHAOSHUNTER_IMAGE = Image.open(CHAOSHUNTER_IMAGE_PATH)
+        CHAOSHUNTER_ICON = np.array(CHAOSHUNTER_IMAGE)
+    else:
+        CHAOSHUNTER_IMAGE = None
+        CHAOSHUNTER_ICON = None
+except Exception:
+    CHAOSHUNTER_IMAGE = None
+    CHAOSHUNTER_ICON = None
 
 K8S_VALIDATION_VERSION = "1.27"

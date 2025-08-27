@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  namespace: chaos-eater
+  namespace: chaos-hunter
   name: super-user
 rules:
 - apiGroups: ["*"] # all api groups
@@ -12,12 +12,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  namespace: chaos-eater
+  namespace: chaos-hunter
   name: super-user-binding
 subjects:
 - kind: ServiceAccount
   name: default
-  namespace: chaos-eater
+  namespace: chaos-hunter
 roleRef:
   kind: ClusterRole
   name: super-user

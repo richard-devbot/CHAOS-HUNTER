@@ -54,6 +54,7 @@ class K8sWeaknessSummaryAgent:
     def summarize_weaknesses(self, k8s_yamls: List[File]) -> Tuple[LLMLog, str]:
         self.logger = LoggingCallback(name="k8s_summary", llm=self.llm)
         container = st.empty()
+        text = ""  # Initialize text variable
         for output in self.agent.stream(
             {"k8s_yamls": self.get_k8s_yamls_str(k8s_yamls)},
             {"callbacks": [self.logger]}
