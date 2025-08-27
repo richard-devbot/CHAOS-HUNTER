@@ -16,8 +16,18 @@ FAULT_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools/chaosmes
 GROUNDCHILDREN_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools/chaosmesh/templates/groundchildren_template.j2")
 SUSPEND_TEMPLATE_PATH = os.path.join(PROJECT_ROOT, "chaos_hunter/ce_tools/chaosmesh/templates/suspend_template.j2")
 
+# Prefer ChaosHunter-branded assets; gracefully fall back to existing ones
 CHAOSHUNTER_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaohunter_logo.png")
 CHAOSHUNTER_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaohunter_icon.png")
+
+_FALLBACK_LOGO_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaoseater_logo.png")
+_FALLBACK_IMAGE_PATH = os.path.join(PROJECT_ROOT, "docs/static/images/chaoseater_icon.png")
+
+if not os.path.exists(CHAOSHUNTER_LOGO_PATH):
+    CHAOSHUNTER_LOGO_PATH = _FALLBACK_LOGO_PATH
+if not os.path.exists(CHAOSHUNTER_IMAGE_PATH):
+    CHAOSHUNTER_IMAGE_PATH = _FALLBACK_IMAGE_PATH
+
 CHAOSHUNTER_IMAGE = Image.open(CHAOSHUNTER_IMAGE_PATH)
 CHAOSHUNTER_ICON = np.array(CHAOSHUNTER_IMAGE)
 
