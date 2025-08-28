@@ -1,14 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc
   namespace: chaos-hunter
+  name: pvc
 spec:
-  # This access mode is widely supported and sufficient for this use case.
   accessModes:
-    - ReadWriteOnce
-  # We don't specify a storageClassName, so it will use the cluster's default,
-  # which is exactly what we want for 'kind'.
+    - ReadWriteMany
   resources:
     requests:
       storage: 1Gi

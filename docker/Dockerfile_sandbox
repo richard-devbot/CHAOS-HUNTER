@@ -10,7 +10,11 @@ RUN apk add bash
 RUN apk add curl
 RUN apk add dos2unix
 # for envsubst in create_kind_cluster.sh
-RUN apk add gettext 
+RUN apk add gettext
+#------------------
+# install helm
+#------------------
+RUN apk add helm
 
 #---------------------
 # install environment
