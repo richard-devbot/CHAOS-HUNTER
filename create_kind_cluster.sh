@@ -120,7 +120,7 @@ docker run --rm \
     --name chaos-hunter \
     --network host \
     chaos-hunter/chaos-hunter:1.0 \
-    bash -c "redis-server --daemonize yes && tail -f /dev/null"
+    bash -c "redis-server --daemonize yes; sleep 2; redis-cli ping && tail -f /dev/null"
 
 #----------
 # epilogue
