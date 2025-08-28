@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  namespace: chaos-hunter
+  namespace: chaos-eater
   name: pv
 spec:
   capacity:
@@ -10,4 +10,4 @@ spec:
     - ReadWriteMany
   storageClassName: standard
   hostPath:
-    path: /chaos-hunter
+    path: /chaos-eater

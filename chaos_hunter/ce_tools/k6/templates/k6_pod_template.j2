@@ -9,10 +9,10 @@ spec:
   containers:
   - name: {{ pod_name }}-container
     image: grafana/k6:latest
-    command: ["k6", "run", "--duration", "{{ duration }}", "--quiet", "/chaos-eater/{{ script_path }}"]
+    command: ["k6", "run", "--duration", "{{ duration }}", "--quiet", "/chaos-hunter/{{ script_path }}"]
     volumeMounts:
       - name: pvc-volume
-        mountPath: /chaos-eater
+        mountPath: /chaos-hunter
   restartPolicy: Never
   volumes:
     - name: pvc-volume
