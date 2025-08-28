@@ -3,6 +3,8 @@ import time
 import json
 import subprocess
 from typing import Tuple, Literal, Optional
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 from ....utils.functions import (
     write_file,
@@ -55,6 +57,25 @@ class Inspection(BaseModel):
                 current_state=self.result
             )
 
+def _create_k8s_api_client(kube_context: str):
+    """Helper function to create a Kubernetes API client."""
+    configuration = client.Configuration()
+    if os.getenv('KUBERNETES_SERVICE_HOST'):
+        config.load_incluster_config(client_configuration=configuration)
+    else:
+        config.load_kube_config(context=kube_context, client_configuration=configuration)
+    return client.CoreV1Api(client.ApiClient(configuration=configuration))
+
+def _check_pvc_exists(pvc_name: str, namespace: str, kube_context: str) -> bool:
+    """Checks if a PersistentVolumeClaim exists in the specified namespace."""
+    api = _create_k8s_api_client(kube_context)
+    try:
+        api.read_namespaced_persistent_volume_claim(name=pvc_name, namespace=namespace)
+        return True
+    except ApiException as e:
+        if e.status == 404:
+            return False
+        raise
 
 def run_pod(
     inspection: Inspection,
@@ -63,6 +84,13 @@ def run_pod(
     namespace: str,
     display_container = None
 ) -> Tuple[int, str]:
+    # Check if PVC exists before proceeding
+    if not _check_pvc_exists("pvc", namespace, kube_context):
+        error_msg = f"PersistentVolumeClaim 'pvc' not found in namespace '{namespace}'. Pod creation will fail."
+        print(error_msg)
+        if display_container is not None:
+            display_container.write(f"###### Error: {error_msg}")
+        return -1, error_msg
     # write pod manifest
     pod_name = sanitize_k8s_name(os.path.splitext(inspection.script.fname)[0]) + "-pod"
     script_path = inspection.script.path
@@ -150,7 +178,7 @@ def wait_for_pod_completion(
 def get_pod_logs(
     pod_name: str,
     kube_context: str,
-    namespace="default"
+    namespace: str = "chaos-hunter"
 ) -> Tuple[int, str]:
     try:
         result = subprocess.run(
