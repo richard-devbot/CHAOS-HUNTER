@@ -109,9 +109,10 @@ def run_pod(
         return -1, error_msg
 
     # write pod manifest
-    pod_name = sanitize_k8s_name(os.path.splitext(inspection.script.fname)) + "-pod"
+    base_name = os.path.splitext(inspection.script.fname)[0]
+    pod_name = sanitize_k8s_name(base_name) + "-pod"
     script_path = inspection.script.path
-    extension = os.path.splitext(inspection.script.fname)
+    extension = os.path.splitext(inspection.script.fname)[1]
     if extension == ".js":
         template_path = K6_POD_TEMPLATE_PATH
         duration = inspection.duration
