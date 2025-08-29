@@ -121,7 +121,7 @@ def retry_with_exponential_backoff(
     return decorator
 
 
-def create_retry_llm(llm_class, **kwargs):
+def create_retry_llm(llm_class, max_retries: int = 5, **kwargs):
     """
     Create an LLM instance with retry capabilities.
     """
@@ -131,11 +131,11 @@ def create_retry_llm(llm_class, **kwargs):
     original_generate = llm._generate
     original_agenerate = getattr(llm, '_agenerate', None)
     
-    @retry_with_exponential_backoff(max_retries=5, base_delay=2.0, max_delay=120.0)
+    @retry_with_exponential_backoff(max_retries=max_retries, base_delay=2.0, max_delay=120.0)
     def retry_generate(*args, **kwargs):
         return original_generate(*args, **kwargs)
     
-    @retry_with_exponential_backoff(max_retries=5, base_delay=2.0, max_delay=120.0)
+    @retry_with_exponential_backoff(max_retries=max_retries, base_delay=2.0, max_delay=120.0)
     def retry_agenerate(*args, **kwargs):
         return original_agenerate(*args, **kwargs)
     
@@ -152,11 +152,11 @@ def create_retry_llm(llm_class, **kwargs):
             original_stream = llm.stream
             
             def retry_stream(*args, **kwargs):
-                for attempt in range(6):  # 5 retries + 1 initial attempt
+                for attempt in range(max_retries + 1):  # max_retries + 1 initial attempt
                     try:
                         return original_stream(*args, **kwargs)
                     except Exception as e:
-                        if attempt == 5:  # Last attempt
+                        if attempt == max_retries:  # Last attempt
                             raise e
                         
                         # Check if this is a rate limit error
@@ -176,7 +176,7 @@ def create_retry_llm(llm_class, **kwargs):
                         if random.random() > 0.5:  # Add jitter
                             delay = delay * (0.5 + random.random() * 0.5)
                         
-                        print(f"Stream rate limit hit, retrying in {delay:.2f} seconds (attempt {attempt + 1}/6)")
+                        print(f"Stream rate limit hit, retrying in {delay:.2f} seconds (attempt {attempt + 1}/{max_retries + 1})")
                         time.sleep(delay)
             
             # Use setattr to avoid Pydantic field validation issues
@@ -191,11 +191,11 @@ def create_retry_llm(llm_class, **kwargs):
             original_astream = llm.astream
             
             def retry_astream(*args, **kwargs):
-                for attempt in range(6):  # 5 retries + 1 initial attempt
+                for attempt in range(max_retries + 1):  # max_retries + 1 initial attempt
                     try:
                         return original_astream(*args, **kwargs)
                     except Exception as e:
-                        if attempt == 5:  # Last attempt
+                        if attempt == max_retries:  # Last attempt
                             raise e
                         
                         # Check if this is a rate limit error
@@ -215,7 +215,7 @@ def create_retry_llm(llm_class, **kwargs):
                         if random.random() > 0.5:  # Add jitter
                             delay = delay * (0.5 + random.random() * 0.5)
                         
-                        print(f"Async stream rate limit hit, retrying in {delay:.2f} seconds (attempt {attempt + 1}/6)")
+                        print(f"Async stream rate limit hit, retrying in {delay:.2f} seconds (attempt {attempt + 1}/{max_retries + 1})")
                         time.sleep(delay)
             
             # Use setattr to avoid Pydantic field validation issues
@@ -233,6 +233,7 @@ def load_llm(
     port: int = 8000,
     seed: int = 42,
     aws_region: str = None,
+    max_retries: int = 5, # Add max_retries parameter
 ) -> Runnable:
     if model_name.startswith("openai/"):
         return create_retry_llm(
@@ -249,10 +250,11 @@ def load_llm(
             google_model_id = google_model_id.split("models/", 1)[1]
         return create_retry_llm(
             ChatGoogleGenerativeAI,
+            max_retries=max_retries, # Pass max_retries here
             model=google_model_id,
             temperature=temperature,
             timeout=60.0,  # Set timeout for requests
-            max_retries=5,  # Increased retries for stability
+            # max_retries=5,  # This is now handled by create_retry_llm
             max_output_tokens=8192,
             top_p=0.95,
             top_k=40

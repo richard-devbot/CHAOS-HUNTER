@@ -5,7 +5,8 @@ metadata:
   name: pvc
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
+  storageClassName: standard-immediate
   resources:
     requests:
       storage: 1Gi
