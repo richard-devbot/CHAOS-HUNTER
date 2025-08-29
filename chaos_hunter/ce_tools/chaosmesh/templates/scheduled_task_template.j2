@@ -18,12 +18,12 @@
               echo "Deadline reached, exiting loop."
               break
             fi
-            python /chaos-eater/{{ unittest_fpath }}
+            python /chaos-hunter/{{ unittest_fpath }}
             sleep {{ interval }}
           done
       volumeMounts:
         - name: pvc-volume
-          mountPath: /chaos-eater
+          mountPath: /chaos-hunter
     volumes:
       - name: pvc-volume
         persistentVolumeClaim:

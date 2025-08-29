@@ -4,13 +4,13 @@
   task:
     container:
       name: {{ task_name }}-container
-      image: chaos-eater/k8sapi:1.0
+      image: chaos-hunter/k8sapi:1.0
       imagePullPolicy: IfNotPresent
       command: ["/bin/bash", "-c"]
-      args: ["python /chaos-eater/{{ unittest_path }} --duration {{ duration }}"]
+      args: ["python /chaos-hunter/{{ unittest_path }} --duration {{ duration }}"]
       volumeMounts:
         - name: pvc-volume
-          mountPath: /chaos-eater
+          mountPath: /chaos-hunter
     volumes:
       - name: pvc-volume
         persistentVolumeClaim:
