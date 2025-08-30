@@ -11,6 +11,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrockConverse
 from .bedrock_wrapper import BedrockWrapper
 from langchain.prompts import ChatPromptTemplate
+from openai import OpenAI as GithubAI
 from langchain_core.runnables.base import Runnable
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.callbacks.base import BaseCallbackHandler
@@ -234,8 +235,24 @@ def load_llm(
     seed: int = 42,
     aws_region: str = None,
     max_retries: int = 5, # Add max_retries parameter
+    github_token: str = None,
+    github_base_url: str = "https://models.github.ai/inference"
 ) -> Runnable:
-    if model_name.startswith("openai/"):
+    if model_name.startswith("github/"):
+        if not github_token:
+            raise ValueError("GitHub token is required for GitHub models")
+        client = GithubAI(
+            base_url=github_base_url,
+            api_key=github_token,
+        )
+        return create_retry_llm(
+            ChatOpenAI,
+            model=model_name.split("github/", 1)[1],
+            temperature=temperature,
+            client=client,
+            request_timeout=30.0
+        )
+    elif model_name.startswith("openai/"):
         return create_retry_llm(
             ChatOpenAI,
             model=model_name.split("openai/", 1)[1],

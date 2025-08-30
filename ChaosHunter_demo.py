@@ -51,7 +51,9 @@ def init_chashunter(
     model_name: str = "openai/gpt-4o",
     temperature: float = 0.0,
     port: int = 8000,
-    seed: int = 42
+    seed: int = 42,
+    github_token: str = None,
+    github_base_url: str = "https://models.github.ai/inference"
 ) -> None:
     # TODO: comment out when publish this code
     # if st.session_state.openai_key == "":
@@ -76,7 +78,9 @@ def init_chashunter(
         temperature=temperature,
         port=port,
         seed=seed,
-        aws_region=aws_region
+        aws_region=aws_region,
+        github_token=st.session_state.github_token if model_name.startswith("github/") else None,
+        github_base_url=st.session_state.github_base_url if model_name.startswith("github/") else None
     )
     st.session_state.chashunter = ChaosHunter(
         llm=llm,
@@ -113,6 +117,10 @@ def main():
         st.session_state.seed = 42
     if "temperature" not in st.session_state:
         st.session_state.temperature = 0.0
+    if "github_token" not in st.session_state:
+        st.session_state.github_token = ""
+    if "github_base_url" not in st.session_state:
+        st.session_state.github_base_url = "https://models.github.ai/inference"
 
     #--------------
     # CSS settings
@@ -417,7 +425,23 @@ def main():
                 "google/gemini-2.5-pro",
                 "google/gemini-2.0-flash-lite",
                 "anthropic/claude-3-5-sonnet-20241022",
+                "github/gpt-5",
             ]
+            
+            # GitHub settings if GitHub model is selected
+            if model_name.startswith("github/"):
+                st.write("### GitHub Settings")
+                st.session_state.github_token = st.text_input(
+                    "GitHub Token",
+                    value=st.session_state.github_token,
+                    type="password",
+                    help="Enter your GitHub token for model access"
+                )
+                st.session_state.github_base_url = st.text_input(
+                    "GitHub Base URL",
+                    value=st.session_state.github_base_url,
+                    help="The base URL for GitHub model inference"
+                )
             
             # Get available Bedrock models if credentials are provided
             available_bedrock_models = []
