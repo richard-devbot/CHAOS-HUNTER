@@ -13,12 +13,37 @@ from .bedrock_wrapper import BedrockWrapper
 from langchain.prompts import ChatPromptTemplate
 from openai import OpenAI as GithubAI
 from langchain_core.runnables.base import Runnable
+from langchain.llms.base import LLM
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
 
 from .wrappers import LLM, LLMBaseModel, BaseModel
 
+
+class GitHubLLM(LLM):
+    def __init__(self, client, model_name, temperature=0.0):
+        super().__init__()
+        self.client = client
+        self.model_name = model_name.replace("github/", "")
+        self.temperature = temperature
+        
+    def _call(self, prompt, stop=None):
+        messages = [{"role": "user", "content": prompt}]
+        response = self.client.chat.completions.create(
+            messages=messages,
+            model=self.model_name,
+            temperature=self.temperature
+        )
+        return response.choices[0].message.content
+        
+    @property
+    def _identifying_params(self):
+        return {"model_name": self.model_name}
+        
+    @property
+    def _llm_type(self):
+        return "github"
 
 def extract_retry_delay(error_str: str) -> Optional[int]:
     """Extract retry delay from error message using multiple patterns."""
@@ -241,16 +266,24 @@ def load_llm(
     if model_name.startswith("github/"):
         if not github_token:
             raise ValueError("GitHub token is required for GitHub models")
+            
+        # Create GitHub AI client
         client = GithubAI(
             base_url=github_base_url,
             api_key=github_token,
         )
-        return create_retry_llm(
-            ChatOpenAI,
-            model=model_name.split("github/", 1)[1],
-            temperature=temperature,
+        
+        # Create GitHub LLM instance
+        llm = GitHubLLM(
             client=client,
-            request_timeout=30.0
+            model_name=model_name,
+            temperature=temperature
+        )
+        
+        # Wrap with retry logic
+        return create_retry_llm(
+            lambda **kwargs: llm,
+            max_retries=max_retries
         )
     elif model_name.startswith("openai/"):
         return create_retry_llm(
