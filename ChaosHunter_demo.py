@@ -113,10 +113,16 @@ def main():
         st.session_state.submit = False
     if "model_name" not in st.session_state:
         st.session_state.model_name = "openai/gpt-4o-2024-08-06"
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = st.session_state.model_name
     if "seed" not in st.session_state:
         st.session_state.seed = 42
     if "temperature" not in st.session_state:
         st.session_state.temperature = 0.0
+    if "github_token" not in st.session_state:
+        st.session_state.github_token = ""
+    if "github_base_url" not in st.session_state:
+        st.session_state.github_base_url = "https://models.github.ai/inference"
     if "github_token" not in st.session_state:
         st.session_state.github_token = ""
     if "github_base_url" not in st.session_state:
@@ -428,8 +434,15 @@ def main():
                 "github/gpt-5",
             ]
             
+            # Model selection
+            st.session_state.selected_model = st.selectbox(
+                "Select Model",
+                options=base_models,
+                index=base_models.index(st.session_state.model_name)
+            )
+            
             # GitHub settings if GitHub model is selected
-            if model_name.startswith("github/"):
+            if st.session_state.selected_model.startswith("github/"):
                 st.write("### GitHub Settings")
                 st.session_state.github_token = st.text_input(
                     "GitHub Token",
@@ -638,7 +651,8 @@ def main():
     # initialization
     # Check if we need to reinitialize (model changed, seed changed, temperature changed, or AWS credentials changed for Bedrock)
     aws_credentials_changed = False
-    if model_name.startswith("bedrock"):
+    selected_model = st.session_state.selected_model
+    if selected_model.startswith("bedrock"):
         current_aws_region = getattr(st.session_state, 'aws_region', None)
         stored_aws_region = getattr(st.session_state, 'stored_aws_region', None)
         current_aws_session_token = getattr(st.session_state, 'aws_session_token', None)
@@ -647,14 +661,16 @@ def main():
                                  current_aws_session_token != stored_aws_session_token)
     
     if ("chashunter" not in st.session_state or 
-        model_name != st.session_state.model_name or 
+        selected_model != st.session_state.model_name or 
         seed != st.session_state.seed or 
         temperature != st.session_state.temperature or
         aws_credentials_changed):
         init_chashunter(
-            model_name=model_name,
+            model_name=selected_model,
             seed=seed,
-            temperature=temperature
+            temperature=temperature,
+            github_token=st.session_state.github_token if selected_model.startswith("github/") else None,
+            github_base_url=st.session_state.github_base_url if selected_model.startswith("github/") else None
         )
         # Store the current AWS credentials to detect changes
         if model_name.startswith("bedrock"):

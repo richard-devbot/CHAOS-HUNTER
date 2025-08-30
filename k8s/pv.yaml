@@ -1,7 +1,7 @@
+# k8s/pv.yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  namespace: chaos-hunter
   name: pv
 spec:
   capacity:

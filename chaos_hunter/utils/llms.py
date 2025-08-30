@@ -13,7 +13,8 @@ from .bedrock_wrapper import BedrockWrapper
 from langchain.prompts import ChatPromptTemplate
 from openai import OpenAI as GithubAI
 from langchain_core.runnables.base import Runnable
-from langchain.llms.base import LLM
+from langchain.llms.base import BaseLLM
+from langchain_core.language_models.llms import LLM
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
@@ -21,7 +22,7 @@ from langchain.schema import LLMResult
 from .wrappers import LLM, LLMBaseModel, BaseModel
 
 
-class GitHubLLM(LLM):
+class GitHubLLM(BaseLLM):
     def __init__(self, client, model_name, temperature=0.0):
         super().__init__()
         self.client = client
@@ -36,6 +37,10 @@ class GitHubLLM(LLM):
             temperature=self.temperature
         )
         return response.choices[0].message.content
+
+    def invoke(self, input, config=None, **kwargs):
+        """Required method for LangChain interface"""
+        return self._call(input)
         
     @property
     def _identifying_params(self):

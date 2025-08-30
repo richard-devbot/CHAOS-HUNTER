@@ -1,12 +1,13 @@
+# k8s/pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   namespace: chaos-hunter
   name: pvc
 spec:
+  storageClassName: standard
   accessModes:
-    - ReadWriteOnce
-  storageClassName: standard-immediate
+    - ReadWriteMany
   resources:
     requests:
       storage: 1Gi

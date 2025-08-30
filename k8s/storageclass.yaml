@@ -1,7 +1,7 @@
+# k8s/storageclass.yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: standard-immediate
-provisioner: kind.x-k8s.io/local-path
-volumeBindingMode: Immediate
-reclaimPolicy: Delete
+  name: standard
+provisioner: kind.x-k8s.io/host-path
+volumeBindingMode: WaitForFirstConsumer
