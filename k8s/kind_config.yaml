@@ -5,4 +5,4 @@ nodes:
 - role: control-plane
   extraMounts:
     - hostPath: ${MOUNTED_HOST_PATH}
-      containerPath: /chaos-hunter
+      containerPath: /chaos-eater

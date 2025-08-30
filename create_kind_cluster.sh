@@ -187,7 +187,7 @@ kubectl create namespace chaos-hunter
 
 # Deploy pv/pvc
 # Deploy pv/pvc
-kubectl apply -f k8s/storageclass.yaml
+# kubectl apply -f k8s/storageclass.yaml
 kubectl apply -f k8s/pv.yaml
 kubectl apply -f k8s/pvc.yaml
 
